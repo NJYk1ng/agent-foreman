@@ -119,7 +119,7 @@ agent-foreman 针对的是另一种约束：
 ## 安装
 
 ```bash
-git clone https://github.com/<you>/agent-foreman
+git clone https://github.com/NJYk1ng/agent-foreman
 cd agent-foreman
 ./install.sh
 ```

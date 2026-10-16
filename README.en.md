@@ -144,7 +144,7 @@ it (the file contract works without any bridge at all), but it removes a copy-pa
 ## Install
 
 ```bash
-git clone https://github.com/<you>/agent-foreman
+git clone https://github.com/NJYk1ng/agent-foreman
 cd agent-foreman
 ./install.sh
 ```
