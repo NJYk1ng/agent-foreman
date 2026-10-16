@@ -118,23 +118,27 @@ agent-foreman 针对的是另一种约束：
 
 ## 安装
 
-Pre-alpha 阶段，目录结构还在动。`install.sh` 落地之前，先手动装。
-
 ```bash
 git clone https://github.com/<you>/agent-foreman
 cd agent-foreman
-
-# 共用 skill —— 两个壳都要读，所以两边必须各有一份内容完全相同的副本
-cp -r skills/agent-contract ~/.claude/skills/
-cp -r skills/agent-contract ~/.codex/skills/
-
-# 领导的 skill
-cp -r skills/tech-lead     ~/.codex/skills/
-cp -r skills/cross-review  ~/.codex/skills/
-
-# 工人的 skill
-cp -r skills/execute-plan  ~/.claude/skills/
+./install.sh
 ```
+
+它会按各 skill 的归属分发 —— `agent-contract` 两端都装，`execute-plan` 只装 Claude Code 侧，
+`tech-lead` / `cross-review` 只装 Codex 侧。
+
+```bash
+./install.sh --dry-run     # 先说清要做什么，不动文件
+./install.sh --force       # 覆盖已存在的
+./install.sh --uninstall   # 卸掉本仓库装的那些
+```
+
+> ⚠️ **两个 harness 的 skill 格式是同一套，但不自动同步。**
+> 实测：只放在 `~/.claude/skills/` 的 skill，Codex 看不到；反之亦然。所以每个 skill 要装到它该去的侧。
+
+**备选：用 [cc-switch](https://github.com/farion1231/cc-switch) 装。** 它的 skill 表里有
+`enabled_claude` / `enabled_codex` 两列，正好做同样的事，还带内容 hash 和更新通道。
+如果你已经在用 cc-switch，把本仓库加成 skill 源、勾上对应的侧即可，不用跑 `install.sh`。
 
 把工人那个壳指向便宜的端点 —— 在 `~/.claude/settings.json` 里：
 
@@ -220,9 +224,8 @@ $cross-review  .foreman/STATUS.md
 **Pre-alpha.** 期一（契约 + 四个 skill）正在写。期二加钩子，让收到的消息在回合边界自动浮出来 —— 但**任何要花领导额度的动作前面留一道人闸**。
 
 - [x] 契约设计 —— [`docs/contract.md`](docs/contract.md)
-- [x] `agent-contract`（两端共用）+ `execute-plan`（工人侧）
-- [ ] `tech-lead`、`cross-review`（领导侧两个）
-- [ ] `install.sh`
+- [x] 四个 skill：`agent-contract`（两端）+ `execute-plan`（工人）+ `tech-lead`、`cross-review`（领导）
+- [x] `install.sh` —— 按各 skill 的归属分发到对应侧
 - [ ] 钩子（Claude Code `UserPromptSubmit` / `Stop`；Codex `userPromptSubmit` / `stop`）
 - [ ] 对照测量：同一批任务，领导制 vs 单 agent，比成本与缺陷漏出率
 

@@ -143,23 +143,29 @@ it (the file contract works without any bridge at all), but it removes a copy-pa
 
 ## Install
 
-Pre-alpha: the layout is still moving. Until `install.sh` lands, install by hand.
-
 ```bash
 git clone https://github.com/<you>/agent-foreman
 cd agent-foreman
-
-# Shared skill — both harnesses read it, so both must have an identical copy
-cp -r skills/agent-contract ~/.claude/skills/
-cp -r skills/agent-contract ~/.codex/skills/
-
-# The lead's skills
-cp -r skills/tech-lead     ~/.codex/skills/
-cp -r skills/cross-review  ~/.codex/skills/
-
-# The crew's skill
-cp -r skills/execute-plan  ~/.claude/skills/
+./install.sh
 ```
+
+It routes each skill to the side that owns it — `agent-contract` goes to both,
+`execute-plan` only to Claude Code, `tech-lead` / `cross-review` only to Codex.
+
+```bash
+./install.sh --dry-run     # say what it would do, touch nothing
+./install.sh --force       # overwrite existing
+./install.sh --uninstall   # remove what this repo installed
+```
+
+> ⚠️ **The two harnesses share a skill format, but do not sync automatically.**
+> Measured: a skill placed only in `~/.claude/skills/` is invisible to Codex, and vice versa.
+> Each skill must be installed on the side that owns it.
+
+**Alternative: install with [cc-switch](https://github.com/farion1231/cc-switch).** Its skill table
+carries `enabled_claude` / `enabled_codex` columns and does the same routing, plus content hashes
+and an update channel. If you already use cc-switch, add this repo as a skill source and tick the
+sides you want — no `install.sh` needed.
 
 Point your crew harness at a cheap endpoint — in `~/.claude/settings.json`:
 
@@ -253,9 +259,8 @@ that inbound messages surface automatically at turn boundaries — with a human 
 that spends lead quota.
 
 - [x] Contract design — [`docs/contract.md`](docs/contract.md)
-- [x] `agent-contract` (shared) + `execute-plan` (crew side)
-- [ ] `tech-lead`, `cross-review` (the lead side)
-- [ ] `install.sh`
+- [x] All four skills: `agent-contract` (both) + `execute-plan` (crew) + `tech-lead`, `cross-review` (lead)
+- [x] `install.sh` — routes each skill to the side that owns it
 - [ ] Hooks (Claude Code `UserPromptSubmit` / `Stop`; Codex `userPromptSubmit` / `stop`)
 - [ ] Measured comparison: same tasks, lead-led vs. single-agent, on cost and defect escape rate
 
