@@ -14,23 +14,30 @@
 # ⭐ 这条命令不会让 Codex 直接开干。
 #   真正管住额度的是 AGENTS.md 里那条规矩：被叫醒时先问人。
 #
-# 用法：
-#   bash .foreman/notify-lead.sh              # 用默认消息
-#   bash .foreman/notify-lead.sh "自定义消息"  # 改消息
-#   bash .foreman/notify-lead.sh "消息" /path/to/project
+# 用法（装好后它在 PATH 上）：
+#   notify-lead                    # 在项目里任意位置跑，用默认消息
+#   notify-lead "自定义消息"        # 改消息
+#   notify-lead "消息" /path/to/project   # 显式指定项目
 #
 set -uo pipefail
 
 MSG="${1:-工人交活了。读 .foreman/ 看该你干什么。⭐ 先问人一句要不要现在干，得到同意再动手。}"
 
-# ⭐ 项目根按【脚本自己的位置】推 —— 脚本住在 <项目>/.foreman/ 里，
-#    所以上两级就是项目根。比用 $PWD 稳：调用方 cd 到哪儿都不影响。
-SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJ="${2:-$(dirname "$SELF")}"
-
-PROJ="$(cd "$PROJ" 2>/dev/null && pwd)" || {
+# ── 找项目根 ─────────────────────────────────────────────────
+# ⭐ 全局安装：从 $PWD 往上找有 .foreman/ 的那一层。
+#    这样脚本装在哪都行（默认 ~/.local/bin/notify-lead），
+#    **装一次，所有项目都能用，新项目零配置。**
+#    第二个参数可以显式指定项目目录，一般用不着。
+PROJ="$(cd "${2:-$PWD}" 2>/dev/null && pwd)" || {
     echo "notify-lead: 目录不存在：${2:-$PWD}" >&2; exit 2
 }
+d="$PROJ"
+while [ "$d" != "/" ] && [ ! -d "$d/.foreman" ]; do d="$(dirname "$d")"; done
+if [ ! -d "$d/.foreman" ]; then
+    echo "notify-lead: 从 $PROJ 往上都没找到 .foreman/ —— 这不像是个 agent-foreman 项目。" >&2
+    exit 1
+fi
+PROJ="$d"
 
 # ── 找本项目最近的、没归档的 Codex 会话 ──────────────────────
 # ⚠️ threads.cwd 里有的带前导斜杠、有的不带（实测同一个项目两种形式并存：

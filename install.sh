@@ -196,6 +196,30 @@ head_ "全局角色说明（两边的全局记忆）"
 put_global "templates/global-claude.md" "$HOME/.claude/CLAUDE.md"                     "Claude Code 全局记忆"
 put_global "templates/global-codex.md"  "${CODEX_HOME:-$HOME/.codex}/AGENTS.md"       "Codex 全局记忆"
 
+# ── 全局：叫醒领导的那条命令 ────────────────────────────────
+# ⭐ 也装成【全局】的 —— 它从 $PWD 往上找 .foreman/，所以放哪儿都行。
+#    这样【新项目零配置】：不装 skill、不装脚本、什么都不用做。
+BIN_DIR="${FOREMAN_BIN_DIR:-$HOME/.local/bin}"
+head_ "全局命令（$BIN_DIR）"
+if [ "$UNINSTALL" = 1 ]; then
+    if [ -e "$BIN_DIR/notify-lead" ]; then
+        [ "$DRY_RUN" = 1 ] && say "会删 $BIN_DIR/notify-lead" || { rm -f "$BIN_DIR/notify-lead"; say "✅ 删了 notify-lead"; }
+    else
+        say "⏭  $BIN_DIR/notify-lead 本来就没有"
+    fi
+elif [ "$DRY_RUN" = 1 ]; then
+    say "会装 notify-lead → $BIN_DIR/notify-lead"
+else
+    mkdir -p "$BIN_DIR"
+    cp "$REPO_DIR/scripts/notify-lead.sh" "$BIN_DIR/notify-lead"
+    chmod +x "$BIN_DIR/notify-lead"
+    say "✅ notify-lead（在项目里任意位置跑都行）"
+    case ":$PATH:" in
+        *":$BIN_DIR:"*) ;;
+        *) say "⚠️  $BIN_DIR 不在 PATH 里 —— 把它加进去才能直接敲 notify-lead" ;;
+    esac
+fi
+
 # ── 项目级：把协作要用的文件放进那个项目 ────────────────────
 # ⚠️ 安全铁律：**绝不覆盖/删除不是我们放的文件。**
 #    项目里很可能本来就有 AGENTS.md / CLAUDE.md，那是人家自己的东西。
@@ -225,7 +249,7 @@ if [ -n "$PROJECT" ]; then
     }
 
     if [ "$UNINSTALL" = 1 ]; then
-        for rel in ".foreman/notify-lead.sh" "AGENTS.md" "CLAUDE.md"; do
+        for rel in "AGENTS.md" "CLAUDE.md"; do
             d="$PROJ/$rel"
             if same_as_ours "$REPO_DIR/$(case $rel in
                     .foreman/*) echo "scripts/notify-lead.sh" ;;
@@ -240,10 +264,11 @@ if [ -n "$PROJECT" ]; then
         done
     else
         [ -d "$PROJ/.foreman" ] || { [ "$DRY_RUN" = 1 ] || mkdir -p "$PROJ/.foreman"; }
-        put "scripts/notify-lead.sh" ".foreman/notify-lead.sh" "notify-lead.sh（工人干完通知领导）"
+        # ⚠️ notify-lead 已经【全局】装了（见上面），这里不再往项目里放脚本。
+        #    --project 现在只干一件事：让项目【自带说明】——
+        #    别人 clone 下来、又没装全局时，看 AGENTS.md 也知道该怎么配合。
         put "templates/AGENTS.md"    "AGENTS.md"                "AGENTS.md（Codex 开场读）"
         put "templates/CLAUDE.md"    "CLAUDE.md"                "CLAUDE.md（Claude 开场读 → AGENTS.md）"
-        [ "$DRY_RUN" = 1 ] || chmod +x "$PROJ/.foreman/notify-lead.sh" 2>/dev/null || true
     fi
 fi
 

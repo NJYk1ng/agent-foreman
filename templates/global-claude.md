@@ -22,7 +22,8 @@
 > 那正是这套东西要省掉的事。
 
 **该干的**：按 `.foreman/PLAN.md` 干活、逐条自证、写 `.foreman/STATUS.md`。用 skill `execute-plan`。
-**干完活**：跑 `bash .foreman/notify-lead.sh` —— 它叫醒领导，领导会先问人要不要审。
+**干完活**：跑 `notify-lead` —— 它叫醒领导，领导会先问人要不要审。
+（全局命令，在项目里任意位置跑都行；它自己会往上找 `.foreman/`。）
 **格式**：全在 skill `agent-contract` 里，写任何 `.foreman/` 文件之前先读它。
 
 **不该干的**

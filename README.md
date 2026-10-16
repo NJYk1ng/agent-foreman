@@ -133,19 +133,21 @@ cd agent-foreman
 ./install.sh --uninstall   # 卸掉本仓库装的那些
 ```
 
-**再往某个项目里放三份协作文件**（推荐）：
+**`notify-lead` 也是全局装的**（进 `~/.local/bin`）—— 它在项目里任意位置跑都行，
+自己会往上找 `.foreman/`。所以**新项目什么都不用做**。
+
+**可选：让项目自带说明**（别人 clone 下来、又没装全局时有用）：
 
 ```bash
 ./install.sh --project ~/code/我的项目
 ```
 
-它会放进项目：
+它会放进项目两份说明：
 
 | 文件 | 给谁 | 干什么 |
 |---|---|---|
 | `AGENTS.md` | Codex | **开场自动读** —— 告诉它"你是领导"、以及「被自动叫醒时先问人再动手」 |
 | `CLAUDE.md` | Claude Code | 一行 `@AGENTS.md` 转发（**单一事实来源，两份写一样的迟早走岔**） |
-| `.foreman/notify-lead.sh` | 工人 | 干完活跑它，把领导叫醒 |
 
 > ⚠️ **绝不覆盖/删除不是它放的文件。** 项目里本来就有 `AGENTS.md` / `CLAUDE.md` 是常事 ——
 > 内容对不上它就拒绝，告诉你该手工加哪一行；卸载时也只删与本仓库逐字节相同的那些。
@@ -230,7 +232,7 @@ $tech-lead  <用你自己的话描述要做什么>
 
 **3 · ⭐ 工人自动叫醒领导 —— 你不用复制粘贴提示词.**
 
-工人写完 `STATUS.md` 会自己跑 `notify-lead.sh`，**把"该你了"推进 Codex 那个会话**，
+工人写完 `STATUS.md` 会自己跑 `notify-lead`，**把"该你了"推进 Codex 那个会话**，
 Codex 就醒了 —— 不需要你走过去、打一段提示词。
 
 它醒来的**第一件事不是干活，是问你**：
@@ -245,7 +247,7 @@ Codex 就醒了 —— 不需要你走过去、打一段提示词。
 
 > 📌 原理：Codex 没有「文件变了就开一轮」的能力（它的 inotify 只盯配置类文件，
 > 钩子事件里也没有文件变更类）。但它有 `codex queue` ——
-> **能从外面把消息塞进一个正在运行的会话。** `notify-lead.sh` 就是包装了它。
+> **能从外面把消息塞进一个正在运行的会话。** `notify-lead` 就是包装了它。
 > 实测：TUI 停在提示符上时塞消息，它会自己开一轮。
 > 详见 [`scripts/notify-lead.sh`](scripts/notify-lead.sh) 的注释。
 
@@ -289,8 +291,8 @@ Codex 就醒了 —— 不需要你走过去、打一段提示词。
 | 装在哪 | 文件 | 什么时候起作用 |
 |---|---|---|
 | **全局**（`install.sh`） | `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` | ⭐ **一开口就知道** —— 任何项目，只要有 `.foreman/` |
-| 项目（`--project`） | `AGENTS.md` / `CLAUDE.md` | 进这个项目就知道（`CLAUDE.md` 只是一行 `@AGENTS.md` 转发） |
-| 项目（`--project`） | `.foreman/notify-lead.sh` | 工人干完活用它叫醒领导 |
+| 项目（`--project`，可选） | `AGENTS.md` / `CLAUDE.md` | 让项目**自带说明** —— 别人 clone 下来没装全局也有用 |
+| **全局**（`install.sh`） | `~/.local/bin/notify-lead` | 工人干完活跑它叫醒领导 —— **新项目零配置** |
 
 **为什么三层都要**：全局那层让 agent 有角色意识，项目那层把细节钉死在仓库里（跟着 git 走、
 别人 clone 下来也有），脚本那层负责自动化。少哪层都能跑，但会更容易走样。

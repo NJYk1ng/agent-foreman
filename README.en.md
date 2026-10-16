@@ -158,7 +158,10 @@ It routes each skill to the side that owns it — `agent-contract` goes to both,
 ./install.sh --uninstall   # remove what this repo installed
 ```
 
-**Then drop the three collaboration files into a project** (recommended):
+**`notify-lead` is installed globally too** (into `~/.local/bin`) — it runs from anywhere inside a
+project and walks up to find `.foreman/`. So **a new project needs nothing**.
+
+**Optional: give the project its own instructions** (useful when someone clones it without the global install):
 
 ```bash
 ./install.sh --project ~/code/my-project
@@ -168,7 +171,6 @@ It routes each skill to the side that owns it — `agent-contract` goes to both,
 |---|---|---|
 | `AGENTS.md` | Codex | **read automatically at session start** — tells it "you are the lead" and that it must **ask before acting when woken automatically** |
 | `CLAUDE.md` | Claude Code | a one-line `@AGENTS.md` forward (**single source of truth — two copies drift**) |
-| `.foreman/notify-lead.sh` | crew | run it when the work is done; it wakes the lead |
 
 > ⚠️ **It never overwrites or deletes a file it did not put there.** Projects often already have
 > their own `AGENTS.md` / `CLAUDE.md` — on a mismatch it refuses and tells you which line to add
@@ -179,8 +181,8 @@ It routes each skill to the side that owns it — `agent-contract` goes to both,
 | Installed at | File | When it takes effect |
 |---|---|---|
 | **global** (`install.sh`) | `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` | ⭐ **from the first word** — any project, as long as it has `.foreman/` |
-| project (`--project`) | `AGENTS.md` / `CLAUDE.md` | on entering that project (`CLAUDE.md` is a one-line `@AGENTS.md` forward) |
-| project (`--project`) | `.foreman/notify-lead.sh` | the crew runs it to wake the lead |
+| project (`--project`, optional) | `AGENTS.md` / `CLAUDE.md` | makes the project **self-describing** — useful for a clone without the global install |
+| **global** (`install.sh`) | `~/.local/bin/notify-lead` | the crew runs it to wake the lead — **a new project needs no setup** |
 
 **Why all three**: the global layer gives the agent its role; the project layer pins the details
 into the repo (they travel with git, so anyone who clones gets them); the script layer automates
@@ -272,7 +274,7 @@ It reads `PLAN.md`, implements, **runs every acceptance check and pastes the rea
 
 **3 · ⭐ The crew wakes the lead — you paste nothing.**
 
-When the crew finishes `STATUS.md` it runs `notify-lead.sh`, which **pushes "your turn" into the
+When the crew finishes `STATUS.md` it runs `notify-lead`, which **pushes "your turn" into the
 running Codex session**. Codex wakes up — you never walk over and type a prompt.
 
 Its **first act is not to work; it is to ask you**:
@@ -288,7 +290,7 @@ your hands are free.
 
 > 📌 How: Codex has no "file changed → start a turn" facility (its inotify watches config files
 > only, and its hook events include no file-change event). But it does have `codex queue` —
-> **you can push a message into a running session from outside.** `notify-lead.sh` wraps it.
+> **you can push a message into a running session from outside.** `notify-lead` wraps it.
 > Measured: queueing a message into an idle TUI starts a turn.
 > See the comments in [`scripts/notify-lead.sh`](scripts/notify-lead.sh).
 
