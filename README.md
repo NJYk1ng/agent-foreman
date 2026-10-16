@@ -133,6 +133,23 @@ cd agent-foreman
 ./install.sh --uninstall   # 卸掉本仓库装的那些
 ```
 
+**再往某个项目里放三份协作文件**（推荐）：
+
+```bash
+./install.sh --project ~/code/我的项目
+```
+
+它会放进项目：
+
+| 文件 | 给谁 | 干什么 |
+|---|---|---|
+| `AGENTS.md` | Codex | **开场自动读** —— 告诉它"你是领导"、以及「被自动叫醒时先问人再动手」 |
+| `CLAUDE.md` | Claude Code | 一行 `@AGENTS.md` 转发（**单一事实来源，两份写一样的迟早走岔**） |
+| `.foreman/notify-lead.sh` | 工人 | 干完活跑它，把领导叫醒 |
+
+> ⚠️ **绝不覆盖/删除不是它放的文件。** 项目里本来就有 `AGENTS.md` / `CLAUDE.md` 是常事 ——
+> 内容对不上它就拒绝，告诉你该手工加哪一行；卸载时也只删与本仓库逐字节相同的那些。
+
 > ⚠️ **两个 harness 的 skill 格式是同一套，但不自动同步。**
 > 实测：只放在 `~/.claude/skills/` 的 skill，Codex 看不到；反之亦然。所以每个 skill 要装到它该去的侧。
 
@@ -158,7 +175,7 @@ cd agent-foreman
 
 ## 快速开始
 
-在你的项目仓库里：
+在你的项目仓库里，**开两个终端**（`codex` 一个、`claude` 一个），都在项目根目录。
 
 **1 · 领导出计划.** 在 Codex 里：
 
@@ -182,15 +199,30 @@ $tech-lead  <用你自己的话描述要做什么>
 
 它读 `PLAN.md`，动手实现，**把每一条验收标准都真跑一遍并把真实输出贴进** `.foreman/STATUS.md`，然后**在计划边界处停下**。
 
-**3 · 领导审.** 回到 Codex：
+**3 · ⭐ 工人自动叫醒领导 —— 你不用复制粘贴提示词.**
+
+工人写完 `STATUS.md` 会自己跑 `notify-lead.sh`，**把"该你了"推进 Codex 那个会话**，
+Codex 就醒了 —— 不需要你走过去、打一段提示词。
+
+它醒来的**第一件事不是干活，是问你**：
 
 ```
-$cross-review  .foreman/STATUS.md
+工人交了 .foreman/STATUS.md：T1 标为 UNVERIFIED，AC1 已通过，AC2–AC4 待你现场验收。
+要我现在审查吗？
 ```
 
-它拿 diff 逐条对照验收标准，把发现按 P0–P3 分级写进 `.foreman/REVIEW.md`。**没有任何东西因为是 agent 说的就算完成。**
+你说「审」它才动手。**这就是那道「花领导额度的动作必须经过人」的闸** ——
+只是从"人来启动"变成了"**它自己来问你**"。闸没松，你的手松了。
 
-**4 · 如果工人卡住了**，它写 `.foreman/BLOCKED.md` —— 试过什么，需要你定什么。**要不要为这件事花领导的额度，由你决定。** 这道人闸是特意留的，理由见[额度纪律](docs/architecture.md#额度纪律)。
+> 📌 原理：Codex 没有「文件变了就开一轮」的能力（它的 inotify 只盯配置类文件，
+> 钩子事件里也没有文件变更类）。但它有 `codex queue` ——
+> **能从外面把消息塞进一个正在运行的会话。** `notify-lead.sh` 就是包装了它。
+> 实测：TUI 停在提示符上时塞消息，它会自己开一轮。
+> 详见 [`scripts/notify-lead.sh`](scripts/notify-lead.sh) 的注释。
+
+**4 · 领导审.** 你说「审」之后，它自己拿 diff 逐条对照验收标准，把发现按 P0–P3 分级写进 `.foreman/REVIEW.md`。**没有任何东西因为是 agent 说的就算完成。**
+
+**5 · 如果工人卡住了**，它写 `.foreman/BLOCKED.md` —— 试过什么，需要你定什么。**要不要为这件事花领导的额度，由你决定。** 这道人闸是特意留的，理由见[额度纪律](docs/architecture.md#额度纪律)。
 
 ---
 
@@ -214,6 +246,14 @@ $cross-review  .foreman/STATUS.md
 | `BLOCKED.md` | 工人 | 卡在哪、已试过什么、需要哪个具体决定 |
 | `REVIEW.md` | 领导 | 按 P0–P3 分级的发现，外加持 `PLAN.md` 的逐条核对结论 |
 
+**外加三份「不当契约、但要装进项目」的东西**（`install.sh --project` 放进去）：
+
+| 文件 | 给谁 | 干什么 |
+|---|---|---|
+| `AGENTS.md` | Codex | 开场自动读：你是领导 + **被自动叫醒时先问人再动手** |
+| `CLAUDE.md` | Claude Code | 一行 `@AGENTS.md` 转发（单一事实来源） |
+| `.foreman/notify-lead.sh` | 工人 | 干完活跑它，把领导叫醒 |
+
 完整规范：[`docs/contract.md`](docs/contract.md)
 设计取舍与额度模型：[`docs/architecture.md`](docs/architecture.md)
 
@@ -221,13 +261,33 @@ $cross-review  .foreman/STATUS.md
 
 ## 项目状态
 
-**Pre-alpha.** 期一（契约 + 四个 skill）正在写。期二加钩子，让收到的消息在回合边界自动浮出来 —— 但**任何要花领导额度的动作前面留一道人闸**。
+**Pre-alpha.** 契约、四个 skill、「工人干完自动叫醒领导」都已可用。
 
 - [x] 契约设计 —— [`docs/contract.md`](docs/contract.md)
 - [x] 四个 skill：`agent-contract`（两端）+ `execute-plan`（工人）+ `tech-lead`、`cross-review`（领导）
-- [x] `install.sh` —— 按各 skill 的归属分发到对应侧
-- [ ] 钩子（Claude Code `UserPromptSubmit` / `Stop`；Codex `userPromptSubmit` / `stop`）
+- [x] `install.sh` —— 分发 skill；`--project` 把协作文件放进项目
+- [x] **工人干完自动叫醒领导** —— `notify-lead.sh`（走 `codex queue`）+ `AGENTS.md`/`CLAUDE.md` 模板
+- [ ] **领导审完自动叫醒工人** —— 要靠文件监听（Claude Code 的 `FileChanged` + `asyncRewake`）
 - [ ] 对照测量：同一批任务，领导制 vs 单 agent，比成本与缺陷漏出率
+
+### ⚠️ 为什么最后没走钩子
+
+原本的计划是用钩子做自动接力（Claude Code 的 `Stop` / Codex 的 `stop`）。**实测后放弃了**，
+把踩到的东西记在这儿，省得别人再走一遍：
+
+1. **Codex 的项目级钩子有两道信任闸** —— 项目信任 + **每个钩子的哈希信任**。
+   没审过的钩子会被**静默跳过，一声不吭**（[#48715](https://github.com/openai/codex/issues/48715)）。
+   用户级钩子免了这道，但会全局生效。
+2. **`codex exec` 根本不跑钩子** —— 只有交互式 TUI 跑。
+3. **Claude Code 的 `FileChanged` 能靠文件变更开一轮，但有个已知 bug**：
+   跑过一次 `cd` 之后监听会被**悄悄解除**（[#95440](https://github.com/anthropics/claude-code/issues/95440)）。
+   而 agent 干活的每一步都在 `cd`。
+4. 绕开来做「钩子里 `sleep` 等对方」也行，代价是**那个终端看起来像卡死**，
+   出问题时极难判断是"在等"还是"死了"。
+
+⇒ 改成：**工人干完时跑一条命令，把消息推进领导的会话**（`codex queue`，
+实测能叫醒停在提示符上的 TUI）。没有常驻进程、没有钩子、没有额外的信任动作。
+**闸还在 —— 只是从"人来启动"变成了"它来问你"。**
 
 ## 参与贡献
 

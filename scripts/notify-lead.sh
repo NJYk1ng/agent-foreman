@@ -33,8 +33,8 @@ PROJ="$(cd "$PROJ" 2>/dev/null && pwd)" || {
 }
 
 # ── 找本项目最近的、没归档的 Codex 会话 ──────────────────────
-# ⚠️ threads.cwd 里有的带前导斜杠、有的不带（实测：/home/jgyy/code/pelican-bike
-#    和 home/jgyy/code/agent-foreman 并存）⇒ 两种形式都要匹配。
+# ⚠️ threads.cwd 里有的带前导斜杠、有的不带（实测同一个项目两种形式并存：
+#    /path/to/proj 和 path/to/proj）⇒ 两种都要匹配。
 TID="$(python3 - "$PROJ" <<'PY'
 import os, sqlite3, sys
 db = os.path.expanduser("~/.codex/state_5.sqlite")

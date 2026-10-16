@@ -158,6 +158,22 @@ It routes each skill to the side that owns it — `agent-contract` goes to both,
 ./install.sh --uninstall   # remove what this repo installed
 ```
 
+**Then drop the three collaboration files into a project** (recommended):
+
+```bash
+./install.sh --project ~/code/my-project
+```
+
+| File | For | What it does |
+|---|---|---|
+| `AGENTS.md` | Codex | **read automatically at session start** — tells it "you are the lead" and that it must **ask before acting when woken automatically** |
+| `CLAUDE.md` | Claude Code | a one-line `@AGENTS.md` forward (**single source of truth — two copies drift**) |
+| `.foreman/notify-lead.sh` | crew | run it when the work is done; it wakes the lead |
+
+> ⚠️ **It never overwrites or deletes a file it did not put there.** Projects often already have
+> their own `AGENTS.md` / `CLAUDE.md` — on a mismatch it refuses and tells you which line to add
+> by hand; uninstall only removes files byte-identical to this repo's.
+
 > ⚠️ **The two harnesses share a skill format, but do not sync automatically.**
 > Measured: a skill placed only in `~/.claude/skills/` is invisible to Codex, and vice versa.
 > Each skill must be installed on the side that owns it.
@@ -185,7 +201,7 @@ Point your crew harness at a cheap endpoint — in `~/.claude/settings.json`:
 
 ## Quick start
 
-In your project repository:
+In your project repository, **open two terminals** (one `codex`, one `claude`), both at the repo root.
 
 **1 · The lead plans.** In Codex:
 
@@ -212,16 +228,33 @@ and where the hard tasks are marked for the lead to write personally.
 It reads `PLAN.md`, implements, **runs every acceptance check and pastes the real output** into
 `.foreman/STATUS.md`, and stops where the plan stops.
 
-**3 · The lead reviews.** Back in Codex:
+**3 · ⭐ The crew wakes the lead — you paste nothing.**
+
+When the crew finishes `STATUS.md` it runs `notify-lead.sh`, which **pushes "your turn" into the
+running Codex session**. Codex wakes up — you never walk over and type a prompt.
+
+Its **first act is not to work; it is to ask you**:
 
 ```
-$cross-review  .foreman/STATUS.md
+The crew handed in .foreman/STATUS.md: T1 is UNVERIFIED, AC1 passed, AC2–AC4 await your on-site check.
+Shall I review now?
 ```
 
-It checks the diff against the acceptance checks and writes `.foreman/REVIEW.md` with findings
-graded P0–P3. Nothing counts as done because an agent said so.
+It only starts once you say yes. **That is the "anything that spends lead quota goes through a
+human" gate** — moved from *you launch it* to *it comes and asks you*. The gate is unchanged;
+your hands are free.
 
-**4 · If the crew gets stuck**, it writes `.foreman/BLOCKED.md` — what it tried, what it needs. You
+> 📌 How: Codex has no "file changed → start a turn" facility (its inotify watches config files
+> only, and its hook events include no file-change event). But it does have `codex queue` —
+> **you can push a message into a running session from outside.** `notify-lead.sh` wraps it.
+> Measured: queueing a message into an idle TUI starts a turn.
+> See the comments in [`scripts/notify-lead.sh`](scripts/notify-lead.sh).
+
+**4 · The lead reviews.** Once you say yes, it checks the diff against the acceptance checks and
+writes `.foreman/REVIEW.md` with findings graded P0–P3. Nothing counts as done because an agent
+said so.
+
+**5 · If the crew gets stuck**, it writes `.foreman/BLOCKED.md` — what it tried, what it needs. You
 decide whether to spend lead quota on it. That decision is deliberate: see
 [Quota discipline](docs/architecture.md#quota-discipline).
 
@@ -254,15 +287,35 @@ Design rationale and the quota model: [`docs/architecture.md`](docs/architecture
 
 ## Status
 
-**Pre-alpha.** Phase 1 (contract + the four skills) is being written now. Phase 2 adds hooks so
-that inbound messages surface automatically at turn boundaries — with a human gate on anything
-that spends lead quota.
+**Pre-alpha.** The contract, the four skills, and "the crew wakes the lead when it is done" all work.
 
 - [x] Contract design — [`docs/contract.md`](docs/contract.md)
 - [x] All four skills: `agent-contract` (both) + `execute-plan` (crew) + `tech-lead`, `cross-review` (lead)
-- [x] `install.sh` — routes each skill to the side that owns it
-- [ ] Hooks (Claude Code `UserPromptSubmit` / `Stop`; Codex `userPromptSubmit` / `stop`)
+- [x] `install.sh` — routes each skill to its side; `--project` drops the collaboration files into a project
+- [x] **The crew wakes the lead automatically** — `notify-lead.sh` (via `codex queue`) + `AGENTS.md`/`CLAUDE.md` templates
+- [ ] **The lead wakes the crew** — needs file watching (Claude Code's `FileChanged` + `asyncRewake`)
 - [ ] Measured comparison: same tasks, lead-led vs. single-agent, on cost and defect escape rate
+
+### ⚠️ Why we did not use hooks
+
+The original plan was hooks for automatic handoff (Claude Code's `Stop`, Codex's `stop`).
+**We measured, then dropped it.** Recorded here so nobody has to walk the same path:
+
+1. **Codex project hooks sit behind two trust gates** — project trust plus a **per-hook hash
+   trust**. An unreviewed hook is **skipped silently, with no message**
+   ([#48715](https://github.com/openai/codex/issues/48715)). User-level hooks skip that gate but
+   then apply globally.
+2. **`codex exec` does not run hooks at all** — only the interactive TUI does.
+3. **Claude Code's `FileChanged` can start a turn, but has a known bug**: the watch is
+   **silently disarmed after any `cd`**
+   ([#95440](https://github.com/anthropics/claude-code/issues/95440)) — and every step an agent
+   takes runs a `cd`.
+4. Working around it by having the hook `sleep` until it is your turn does work, but the cost is a
+   terminal that **looks frozen**, where a stuck state and a dead one are hard to tell apart.
+
+⇒ Instead: **the crew runs one command that pushes a message into the lead's session**
+(`codex queue`, measured to wake an idle TUI). No daemon, no hooks, no extra trust step.
+**The gate is still there — it just asks you now.**
 
 ## Contributing
 
