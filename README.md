@@ -153,6 +153,35 @@ cd agent-foreman
 > ⚠️ **两个 harness 的 skill 格式是同一套，但不自动同步。**
 > 实测：只放在 `~/.claude/skills/` 的 skill，Codex 看不到；反之亦然。所以每个 skill 要装到它该去的侧。
 
+### ⭐ 装一次，两边就知道自己是谁
+
+`./install.sh` 还会往**两边的全局记忆**里写一段角色说明：
+
+| 写进 | 内容 |
+|---|---|
+| `~/.claude/CLAUDE.md` | 工人该干什么、**不该干什么** |
+| `~/.codex/AGENTS.md` | 领导该干什么、**不该干什么** |
+
+```
+该干：按 .foreman/PLAN.md 干活、逐条自证、写 STATUS.md
+不该干：❌ 不写 PLAN/REVIEW
+        ❌ [现场] 不许标 ✅（你证不了它）
+        ❌ 不许把 UNVERIFIED 写成 DONE
+        ❌ 不许用「留痕」替代「验证」
+```
+
+**它不是替换，是夹在一对标记之间插进去** —— 那两个文件里你原有的内容**一个字不动**
+（改前自动备份，`--uninstall` 逐字节还原）。段首写着「先看项目根有没有 `.foreman/`，
+没有就完全忽略这一段」，所以**不影响你其他项目**。
+
+> 📌 **这一层才是重点。** skill 是「被叫到才触发」的，项目级 `AGENTS.md` 是「每个项目都得放一份」的 ——
+> 只有**全局记忆**能让 agent 一开口就知道自己是谁、边界在哪。
+
+> ⚠️ 两个全局文件的路径：Claude Code 读 `~/.claude/CLAUDE.md`；
+> Codex 读 `` ${CODEX_HOME:-~/.codex}/AGENTS.md ``（Codex 二进制里那句
+> `Failed to read global AGENTS.md instructions from ...` 就是它）。
+> 要改位置用 `CLAUDE_SKILLS_DIR` / `CODEX_HOME` 同样那套环境变量。
+
 **备选：用 [cc-switch](https://github.com/farion1231/cc-switch) 装。** 它的 skill 表里有
 `enabled_claude` / `enabled_codex` 两列，正好做同样的事，还带内容 hash 和更新通道。
 如果你已经在用 cc-switch，把本仓库加成 skill 源、勾上对应的侧即可，不用跑 `install.sh`。
@@ -246,13 +275,16 @@ Codex 就醒了 —— 不需要你走过去、打一段提示词。
 | `BLOCKED.md` | 工人 | 卡在哪、已试过什么、需要哪个具体决定 |
 | `REVIEW.md` | 领导 | 按 P0–P3 分级的发现，外加持 `PLAN.md` 的逐条核对结论 |
 
-**外加三份「不当契约、但要装进项目」的东西**（`install.sh --project` 放进去）：
+**外加三层「让 agent 知道自己是谁」的东西**，装的层次不同：
 
-| 文件 | 给谁 | 干什么 |
+| 装在哪 | 文件 | 什么时候起作用 |
 |---|---|---|
-| `AGENTS.md` | Codex | 开场自动读：你是领导 + **被自动叫醒时先问人再动手** |
-| `CLAUDE.md` | Claude Code | 一行 `@AGENTS.md` 转发（单一事实来源） |
-| `.foreman/notify-lead.sh` | 工人 | 干完活跑它，把领导叫醒 |
+| **全局**（`install.sh`） | `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` | ⭐ **一开口就知道** —— 任何项目，只要有 `.foreman/` |
+| 项目（`--project`） | `AGENTS.md` / `CLAUDE.md` | 进这个项目就知道（`CLAUDE.md` 只是一行 `@AGENTS.md` 转发） |
+| 项目（`--project`） | `.foreman/notify-lead.sh` | 工人干完活用它叫醒领导 |
+
+**为什么三层都要**：全局那层让 agent 有角色意识，项目那层把细节钉死在仓库里（跟着 git 走、
+别人 clone 下来也有），脚本那层负责自动化。少哪层都能跑，但会更容易走样。
 
 完整规范：[`docs/contract.md`](docs/contract.md)
 设计取舍与额度模型：[`docs/architecture.md`](docs/architecture.md)
@@ -265,7 +297,7 @@ Codex 就醒了 —— 不需要你走过去、打一段提示词。
 
 - [x] 契约设计 —— [`docs/contract.md`](docs/contract.md)
 - [x] 四个 skill：`agent-contract`（两端）+ `execute-plan`（工人）+ `tech-lead`、`cross-review`（领导）
-- [x] `install.sh` —— 分发 skill；`--project` 把协作文件放进项目
+- [x] `install.sh` —— 分发 skill；**写两边全局记忆（装一次就知道自己是谁）**；`--project` 把协作文件放进项目
 - [x] **工人干完自动叫醒领导** —— `notify-lead.sh`（走 `codex queue`）+ `AGENTS.md`/`CLAUDE.md` 模板
 - [ ] **领导审完自动叫醒工人** —— 要靠文件监听（Claude Code 的 `FileChanged` + `asyncRewake`）
 - [ ] 对照测量：同一批任务，领导制 vs 单 agent，比成本与缺陷漏出率

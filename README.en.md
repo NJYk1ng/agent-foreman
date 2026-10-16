@@ -174,9 +174,51 @@ It routes each skill to the side that owns it — `agent-contract` goes to both,
 > their own `AGENTS.md` / `CLAUDE.md` — on a mismatch it refuses and tells you which line to add
 > by hand; uninstall only removes files byte-identical to this repo's.
 
+### The three layers of "the agent knows who it is"
+
+| Installed at | File | When it takes effect |
+|---|---|---|
+| **global** (`install.sh`) | `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` | ⭐ **from the first word** — any project, as long as it has `.foreman/` |
+| project (`--project`) | `AGENTS.md` / `CLAUDE.md` | on entering that project (`CLAUDE.md` is a one-line `@AGENTS.md` forward) |
+| project (`--project`) | `.foreman/notify-lead.sh` | the crew runs it to wake the lead |
+
+**Why all three**: the global layer gives the agent its role; the project layer pins the details
+into the repo (they travel with git, so anyone who clones gets them); the script layer automates
+the handoff. Any two would work, but it drifts more easily.
+
 > ⚠️ **The two harnesses share a skill format, but do not sync automatically.**
 > Measured: a skill placed only in `~/.claude/skills/` is invisible to Codex, and vice versa.
 > Each skill must be installed on the side that owns it.
+
+### ⭐ Install once, and both sides know who they are
+
+`./install.sh` also writes a role note into **each side's global memory**:
+
+| Written into | Content |
+|---|---|
+| `~/.claude/CLAUDE.md` | what the crew does — and **what it must not do** |
+| `~/.codex/AGENTS.md` | what the lead does — and **what it must not do** |
+
+```
+Does:    follow .foreman/PLAN.md, verify each check, write STATUS.md
+Doesn't: ❌ write PLAN/REVIEW
+         ❌ mark a [现场] check ✅ (you cannot verify it)
+         ❌ write UNVERIFIED as DONE
+         ❌ substitute a caveat for a verification
+```
+
+**It does not replace those files — it inserts between a pair of markers**, leaving everything you
+already had **untouched** (backed up first; `--uninstall` restores byte-for-byte). The block opens
+with "look for `.foreman/` at the project root; if it is not there, ignore this entirely", so
+**your other projects are unaffected**.
+
+> 📌 **This layer is the point.** Skills fire only when something matches them; a project-level
+> `AGENTS.md` must be placed in every project. **Only global memory makes an agent know its role
+> and its limits from the first word.**
+
+> ⚠️ Paths: Claude Code reads `~/.claude/CLAUDE.md`; Codex reads
+> `` ${CODEX_HOME:-~/.codex}/AGENTS.md `` (that is the file behind Codex's own
+> `Failed to read global AGENTS.md instructions from ...` message).
 
 **Alternative: install with [cc-switch](https://github.com/farion1231/cc-switch).** Its skill table
 carries `enabled_claude` / `enabled_codex` columns and does the same routing, plus content hashes
@@ -291,7 +333,7 @@ Design rationale and the quota model: [`docs/architecture.md`](docs/architecture
 
 - [x] Contract design — [`docs/contract.md`](docs/contract.md)
 - [x] All four skills: `agent-contract` (both) + `execute-plan` (crew) + `tech-lead`, `cross-review` (lead)
-- [x] `install.sh` — routes each skill to its side; `--project` drops the collaboration files into a project
+- [x] `install.sh` — routes each skill to its side; **writes both global memories (install once, both know who they are)**; `--project` drops the collaboration files into a project
 - [x] **The crew wakes the lead automatically** — `notify-lead.sh` (via `codex queue`) + `AGENTS.md`/`CLAUDE.md` templates
 - [ ] **The lead wakes the crew** — needs file watching (Claude Code's `FileChanged` + `asyncRewake`)
 - [ ] Measured comparison: same tasks, lead-led vs. single-agent, on cost and defect escape rate

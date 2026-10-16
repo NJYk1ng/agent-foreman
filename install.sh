@@ -34,6 +34,7 @@ DRY_RUN=0
 FORCE=0
 UNINSTALL=0
 PROJECT=""
+BACKUP_TS="$(date +%Y%m%d-%H%M%S)"
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -123,6 +124,77 @@ for line in $LAYOUT; do
         installed=$((installed + 1))
     done
 done
+
+# ── 全局：一装就知道自己是谁 ────────────────────────────────
+# ⭐ 这是这个项目的重点 ——「安排好，装一次，两边就知道该干什么不该干什么」。
+#    写进两边的【全局记忆】：
+#      Claude Code → ~/.claude/CLAUDE.md
+#      Codex       → ~/.codex/AGENTS.md
+#        （Codex 二进制原话：core/src/agents_md.rs 的
+#         "Failed to read global AGENTS.md instructions from ..." ⇒ 它确实读全局那份）
+#
+# ⚠️ 这两个文件【用户自己很可能已经有内容了】（本机 ~/.claude/CLAUDE.md 就有 18 行铁律）。
+#    所以只用一对标记夹一段写进去，标记之外一个字都不碰；改前先备份。
+AF_BEGIN='<!-- ═══ agent-foreman 开始'
+AF_END='<!-- ═══ agent-foreman 结束 ═══ -->'
+
+put_global() {   # put_global <仓库里的模板> <目标文件> <说明>
+    local src="$REPO_DIR/$1" dest="$2" what="$3"
+    [ -f "$src" ] || { say "⚠️  仓库里没有 $src"; return; }
+
+    if [ "$UNINSTALL" = 1 ]; then
+        [ -e "$dest" ] || return
+        grep -qF "$AF_BEGIN" "$dest" 2>/dev/null || { say "⏭  $what：没有我们那段，没动"; return; }
+        if [ "$DRY_RUN" = 1 ]; then say "会从 $what 里删掉 agent-foreman 那段"; return; fi
+        python3 - "$dest" <<'PY'
+import sys
+p = sys.argv[1]
+out, skip = [], False
+for ln in open(p, encoding="utf-8").read().split("\n"):
+    if ln.startswith("<!-- ═══ agent-foreman 开始"): skip = True
+    if not skip: out.append(ln)
+    if ln.strip() == "<!-- ═══ agent-foreman 结束 ═══ -->": skip = False
+while out and out[-1].strip() == "": out.pop()
+open(p, "w", encoding="utf-8").write("\n".join(out) + "\n")
+PY
+        say "✅ $what：删掉了 agent-foreman 那段（别的一句话没动）"
+        return
+    fi
+
+    if [ "$DRY_RUN" = 1 ]; then
+        say "会写进 $what：agent-foreman 角色说明（夹在标记之间，别的不动）"
+        return
+    fi
+
+    mkdir -p "$(dirname "$dest")"
+    [ -e "$dest" ] && cp "$dest" "$dest.bak-$BACKUP_TS"
+    python3 - "$src" "$dest" <<'PY'
+import sys
+src, dest = sys.argv[1], sys.argv[2]
+block = open(src, encoding="utf-8").read().rstrip("\n").split("\n")
+try:
+    old = open(dest, encoding="utf-8").read()
+except FileNotFoundError:
+    old = ""
+lines = old.split("\n")
+start = end = None
+for i, ln in enumerate(lines):
+    if ln.startswith("<!-- ═══ agent-foreman 开始"): start = i
+    if start is not None and ln.strip() == "<!-- ═══ agent-foreman 结束 ═══ -->":
+        end = i; break
+if start is not None and end is not None:          # 已有 → 就地换掉（位置不变）
+    new = lines[:start] + block + lines[end + 1:]
+else:                                              # 没有 → 追加到末尾
+    new = lines + ([""] if lines and lines[-1].strip() else []) + block
+while len(new) > 1 and new[-1].strip() == "": new.pop()
+open(dest, "w", encoding="utf-8").write("\n".join(new) + "\n")
+PY
+    say "✅ $what：写入了 agent-foreman 角色说明"
+}
+
+head_ "全局角色说明（两边的全局记忆）"
+put_global "templates/global-claude.md" "$HOME/.claude/CLAUDE.md"                     "Claude Code 全局记忆"
+put_global "templates/global-codex.md"  "${CODEX_HOME:-$HOME/.codex}/AGENTS.md"       "Codex 全局记忆"
 
 # ── 项目级：把协作要用的文件放进那个项目 ────────────────────
 # ⚠️ 安全铁律：**绝不覆盖/删除不是我们放的文件。**
