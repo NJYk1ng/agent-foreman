@@ -1,0 +1,3 @@
+interface:
+  display_name: "Agent Contract"
+  short_description: "领导与工人之间的文件契约"

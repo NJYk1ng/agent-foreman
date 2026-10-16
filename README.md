@@ -156,11 +156,6 @@ cp -r skills/execute-plan  ~/.claude/skills/
 
 在你的项目仓库里：
 
-```bash
-mkdir -p .foreman
-git add .foreman && git commit -m "chore: 初始化 agent-foreman 契约"
-```
-
 **1 · 领导出计划.** 在 Codex 里：
 
 ```
@@ -168,6 +163,12 @@ $tech-lead  <用你自己的话描述要做什么>
 ```
 
 它写出 `.foreman/PLAN.md` —— 一份任务清单，其中**每条任务的验收标准都是可证伪的**（一条命令 / 一个可观察的事实 / 一条写清了判据的现场步骤）；难的任务会被标注为「由领导亲自写」。
+
+> ⚠️ **提交要等这一步之后** —— `.foreman/` 里得先有文件：
+> ```bash
+> git add .foreman && git commit -m "chore: 初始化 agent-foreman 契约"
+> ```
+> （git 不跟踪空目录，所以不能先 `mkdir` 再 `git add`。）
 
 **2 · 工人施工.** 在 Claude Code 里：
 
@@ -218,8 +219,9 @@ $cross-review  .foreman/STATUS.md
 
 **Pre-alpha.** 期一（契约 + 四个 skill）正在写。期二加钩子，让收到的消息在回合边界自动浮出来 —— 但**任何要花领导额度的动作前面留一道人闸**。
 
-- [x] 契约设计
-- [ ] `agent-contract`、`tech-lead`、`cross-review`、`execute-plan`
+- [x] 契约设计 —— [`docs/contract.md`](docs/contract.md)
+- [x] `agent-contract`（两端共用）+ `execute-plan`（工人侧）
+- [ ] `tech-lead`、`cross-review`（领导侧两个）
 - [ ] `install.sh`
 - [ ] 钩子（Claude Code `UserPromptSubmit` / `Stop`；Codex `userPromptSubmit` / `stop`）
 - [ ] 对照测量：同一批任务，领导制 vs 单 agent，比成本与缺陷漏出率

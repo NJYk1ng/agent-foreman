@@ -181,11 +181,6 @@ Point your crew harness at a cheap endpoint — in `~/.claude/settings.json`:
 
 In your project repository:
 
-```bash
-mkdir -p .foreman
-git add .foreman && git commit -m "chore: init agent-foreman contract"
-```
-
 **1 · The lead plans.** In Codex:
 
 ```
@@ -195,6 +190,12 @@ $tech-lead  <describe what you want, in your own words>
 It writes `.foreman/PLAN.md` — a task list where **every task carries falsifiable acceptance
 checks** (a command, an observable fact, or an on-site step with its pass criterion written out),
 and where the hard tasks are marked for the lead to write personally.
+
+> ⚠️ **Commit only after this step** — `.foreman/` needs a file in it first:
+> ```bash
+> git add .foreman && git commit -m "chore: init agent-foreman contract"
+> ```
+> (Git does not track empty directories, so `mkdir` followed by `git add` does not work.)
 
 **2 · The crew builds.** In Claude Code:
 
@@ -251,8 +252,9 @@ Design rationale and the quota model: [`docs/architecture.md`](docs/architecture
 that inbound messages surface automatically at turn boundaries — with a human gate on anything
 that spends lead quota.
 
-- [x] Contract design
-- [ ] `agent-contract`, `tech-lead`, `cross-review`, `execute-plan`
+- [x] Contract design — [`docs/contract.md`](docs/contract.md)
+- [x] `agent-contract` (shared) + `execute-plan` (crew side)
+- [ ] `tech-lead`, `cross-review` (the lead side)
 - [ ] `install.sh`
 - [ ] Hooks (Claude Code `UserPromptSubmit` / `Stop`; Codex `userPromptSubmit` / `stop`)
 - [ ] Measured comparison: same tasks, lead-led vs. single-agent, on cost and defect escape rate

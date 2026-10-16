@@ -1,0 +1,3 @@
+interface:
+  display_name: "Execute Plan"
+  short_description: "按 PLAN.md 干活并逐条自证"
