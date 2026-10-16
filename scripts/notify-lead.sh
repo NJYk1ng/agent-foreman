@@ -43,13 +43,23 @@ PROJ="$d"
 # ⚠️ threads.cwd 里有的带前导斜杠、有的不带（实测同一个项目两种形式并存：
 #    /path/to/proj 和 path/to/proj）⇒ 两种都要匹配。
 TID="$(python3 - "$PROJ" <<'PY'
-import os, sqlite3, sys
-# ⚠️ 别写死 ~/.codex —— 设了 CODEX_HOME 的人（很常见）会找不到库，
-#    然后这里静默返回空 → 上层报"没找到会话"，看起来像"你没开 Codex"，其实是路径不对。
+import glob, os, re, sqlite3, sys
+
+# ⚠️ 两个都别写死：
+#   ① 家目录 —— 设了 CODEX_HOME 的人（很常见）会在别处；
+#   ② 文件名里的版本号 —— `state_5.sqlite` 的 5 是 Codex 的 schema 版本，
+#      写死在 Codex 二进制里。它哪天升到 state_6，写死的路径就找不到了，
+#      而报错会说"没找到会话"，看起来像"你没开 Codex" —— 指错方向。
+#      ⇒ 按版本号找最大的那个。
 codex_home = os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex")
-db = os.path.join(codex_home, "state_5.sqlite")
-if not os.path.exists(db):
-    sys.exit(0)
+cands = glob.glob(os.path.join(codex_home, "state_*.sqlite"))
+def ver(p):
+    m = re.search(r"state_(\d+)\.sqlite$", p)
+    return int(m.group(1)) if m else -1
+cands = [c for c in cands if ver(c) >= 0]
+if not cands:
+    sys.exit(0)                     # 没这个库 → 交给上层报"找不到会话"
+db = max(cands, key=ver)
 proj = os.path.realpath(sys.argv[1])
 con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
 row = con.execute(
