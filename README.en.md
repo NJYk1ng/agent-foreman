@@ -296,7 +296,18 @@ your hands are free.
 writes `.foreman/REVIEW.md` with findings graded P0–P3. Nothing counts as done because an agent
 said so.
 
-**5 · If the crew gets stuck**, it writes `.foreman/BLOCKED.md` — what it tried, what it needs. You
+**5 · Nudge the crew.** When the lead finishes reviewing, the crew is parked. Switch to the
+crew's terminal and **press ↑ then Enter**.
+
+**Why you nudge here instead of it waking itself**: see
+[Why we did not use hooks](#-why-we-did-not-use-hooks) — every mechanism that auto-wakes Claude
+Code is either **silently self-disabling** or requires **reverse-engineering an internal
+protocol**. The nudge costs two seconds and buys you a workflow that **never quietly breaks.**
+
+(The crew needs no briefing on what the lead said — its global memory says "when you are called,
+read `.foreman/` first"; it works out from `REVIEW.md` whether it was bounced or approved.)
+
+**6 · If the crew gets stuck**, it writes `.foreman/BLOCKED.md` — what it tried, what it needs. You
 decide whether to spend lead quota on it. That decision is deliberate: see
 [Quota discipline](docs/architecture.md#quota-discipline).
 
@@ -335,7 +346,7 @@ Design rationale and the quota model: [`docs/architecture.md`](docs/architecture
 - [x] All four skills: `agent-contract` (both) + `execute-plan` (crew) + `tech-lead`, `cross-review` (lead)
 - [x] `install.sh` — routes each skill to its side; **writes both global memories (install once, both know who they are)**; `--project` drops the collaboration files into a project
 - [x] **The crew wakes the lead automatically** — `notify-lead.sh` (via `codex queue`) + `AGENTS.md`/`CLAUDE.md` templates
-- [ ] **The lead wakes the crew** — needs file watching (Claude Code's `FileChanged` + `asyncRewake`)
+- [x] ~~The lead wakes the crew~~ — **two routes evaluated, both dropped**: file watching has a silent `cd` bug, the socket needs an internal protocol reversed. **Replaced by "nudge the crew"** — see below
 - [ ] Measured comparison: same tasks, lead-led vs. single-agent, on cost and defect escape rate
 
 ### ⚠️ Why we did not use hooks
@@ -348,10 +359,27 @@ The original plan was hooks for automatic handoff (Claude Code's `Stop`, Codex's
    ([#48715](https://github.com/openai/codex/issues/48715)). User-level hooks skip that gate but
    then apply globally.
 2. **`codex exec` does not run hooks at all** — only the interactive TUI does.
-3. **Claude Code's `FileChanged` can start a turn, but has a known bug**: the watch is
-   **silently disarmed after any `cd`**
-   ([#95440](https://github.com/anthropics/claude-code/issues/95440)) — and every step an agent
-   takes runs a `cd`.
+3. **Claude Code's `FileChanged` + `asyncRewake` really can start a turn** — measured on
+   v2.1.301: the hook fires, the project-level `.claude/settings.json` is loaded, and both the
+   `matcher` (a filename in the current directory) and absolute `watchPaths` from `SessionStart`
+   work. ⚠️ **But it has a fatal bug, reproduced here**: the watch is **silently disarmed after any
+   `cd`** ([#95440](https://github.com/anthropics/claude-code/issues/95440)).
+
+   Measured side by side (same settings, same watched file):
+
+   | Session | Ran a `cd`? | Hook fired |
+   |---|---|---|
+   | A | no | ✅ 3 times |
+   | B | yes (marker file proves it) | ❌ **not once** |
+
+   And every step an agent takes runs a `cd` ⇒ **dead the moment work starts, with no message.**
+
+4. **We also tried a cleaner route**: each Claude Code session has a unix socket
+   (`/run/user/<uid>/cc-socks/<pid>.sock`; `claude agents --json` lists sessions and their pids),
+   which in principle allows pushing a message in from outside, symmetric to `codex queue`.
+   **But its protocol is internal and undocumented** (custom headers like `from="…"` plus a 32-hex
+   token), and anything reverse-engineered from it **can silently break on the next update.**
+   ⇒ Not worth it for a feature that might quietly stop working. **Dropped.**
 4. Working around it by having the hook `sleep` until it is your turn does work, but the cost is a
    terminal that **looks frozen**, where a stuck state and a dead one are hard to tell apart.
 
