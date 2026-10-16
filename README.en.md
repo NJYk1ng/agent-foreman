@@ -122,22 +122,40 @@ this fills.
 
 ## Requirements
 
-| Requirement | Version | Why |
+Two agents plus three small tools. The versions below are **the ones this was measured on**, not
+exact minimums.
+
+| Requirement | Measured | Why |
 |---|---|---|
-| **Claude Code** | ≥ 2.1 | needs `SKILL.md` support and hooks |
-| **Codex CLI** | current (`@openai/codex`) | the lead |
-| **Node.js** | ≥ 18.18 | required by the Codex↔Claude Code bridge |
-| **git** | any | the contract directory is committed — it is the audit trail |
-| A **crew endpoint** | any Anthropic-compatible | DeepSeek, a relay, Anthropic itself, … |
+| **Claude Code** | 2.1.301 | the crew. Needs `SKILL.md` support |
+| **Codex** | 0.163.0 | the lead. **CLI or desktop app** — they share one app-server, and `codex queue` reaches either |
+| **python3** | 3.10 | `notify-lead` reads Codex's session database with it, to find this project's session |
+| **git** | any | `.foreman/` is committed — **it is the audit trail** |
+| **bash** | any | `install.sh` / `notify-lead` |
 
-**Accounts** — either works:
-- a **ChatGPT subscription** (the bridge works on the free tier too; paid tiers have far larger
-  limits), or
-- an **OpenAI API key**.
+**Is the Codex version strict?** Not exactly, but it **must have the `codex queue` subcommand** —
+that is what wakes the lead here. If `codex queue --help` prints something, you are fine.
 
-**Optional but recommended:** [`openai/codex-plugin-cc`](https://github.com/openai/codex-plugin-cc)
-— the official bridge that lets Claude Code invoke Codex directly. agent-foreman does not require
-it (the file contract works without any bridge at all), but it removes a copy-paste step.
+**Accounts** — either works: a **ChatGPT subscription** (the free tier works too; paid tiers have
+far larger limits), or an **OpenAI API key**.
+
+**Crew endpoint** — any Anthropic-compatible one (DeepSeek, a relay, Anthropic itself, …), set in
+the `env` block of `~/.claude/settings.json` — see [Install](#install).
+
+### Two prerequisites that are easy to miss
+
+- ⚠️ **`~/.local/bin` must be on `PATH`** — that is where `install.sh` puts `notify-lead`. If it
+  is not, the installer **says so** rather than finishing silently.
+- ⭐ **That is the whole setup — a new project needs nothing.** `notify-lead` walks up from the
+  current directory to find `.foreman/`.
+
+### What you do *not* need
+
+- ❌ **No hooks.** Tried, dropped — one route **fails silently**, the other needs an internal
+  protocol reversed. Evidence and reasoning: [Why we did not use hooks](#-why-we-did-not-use-hooks).
+- ❌ **Not [`openai/codex-plugin-cc`](https://github.com/openai/codex-plugin-cc).** The plain file
+  contract plus `codex queue` is enough; the bridge only saves one copy-paste.
+- ❌ **No separate Node.js install** — installing Codex via npm brings it.
 
 ---
 

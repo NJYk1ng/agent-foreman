@@ -97,22 +97,37 @@ agent-foreman 针对的是另一种约束：
 
 ## 环境要求
 
-| 依赖 | 版本 | 为什么需要 |
+两个 agent，加三个小工具。下表的版本是**实测跑通的那一版**，不是精确下限。
+
+| 依赖 | 实测版本 | 为什么 |
 |---|---|---|
-| **Claude Code** | ≥ 2.1 | 需要 `SKILL.md` 支持和 hook |
-| **Codex CLI** | 当前版本（`@openai/codex`） | 担任领导 |
-| **Node.js** | ≥ 18.18 | Codex ↔ Claude Code 桥的要求 |
-| **git** | 任意 | 契约目录要提交 —— 它就是审计线索 |
-| **工人端点** | 任意 Anthropic 兼容 | DeepSeek、中转站、Anthropic 本身…… |
+| **Claude Code** | 2.1.301 | 工人。要能读 `SKILL.md` |
+| **Codex** | 0.163.0 | 领导。**CLI 或桌面版都行** —— 两者共用同一个 app-server，`codex queue` 两边都叫得醒 |
+| **python3** | 3.10 | `notify-lead` 用它读 Codex 的会话库，找本项目最近的会话 |
+| **git** | 任意 | `.foreman/` 要提交 —— **它就是审计线索** |
+| **bash** | 任意 | `install.sh` / `notify-lead` |
 
-**账号** —— 二者其一即可：
+**Codex 那条是硬要求吗**：版本不精确，但**必须带 `codex queue` 子命令** —— 本项目靠它叫醒领导。
+敲 `codex queue --help` 能出东西就行。
 
-- **ChatGPT 订阅**（官方桥在免费档也能用，付费档额度大得多），或
-- **OpenAI API key**。
+**账号** —— 二者其一即可：**ChatGPT 订阅**（免费档也能用，付费档额度大得多），或 **OpenAI API key**。
 
-**可选但推荐：** [`openai/codex-plugin-cc`](https://github.com/openai/codex-plugin-cc) —— 官方桥，让 Claude Code 能直接调起 Codex。
+**工人端点** —— 任意 Anthropic 兼容（DeepSeek、中转站、Anthropic 本身……），
+配在 `~/.claude/settings.json` 的 `env` 里，[见安装那节](#安装)。
 
-> agent-foreman **不依赖**它：纯文件契约不需要任何桥就能跑通。它只是省掉一次复制粘贴。
+### 两个容易漏的前提
+
+- ⚠️ **`~/.local/bin` 要在 `PATH` 里** —— `install.sh` 把 `notify-lead` 装在那儿。
+  不在的话它会**明确提示**，不会装完就哑了。
+- ⭐ **装完就完了 —— 新项目什么都不用做。** `notify-lead` 从当前目录往上找 `.foreman/`。
+
+### 不需要什么
+
+- ❌ **不需要钩子。** 试过，放弃了 —— 一条会**静默失效**、一条要逆向内部协议。
+  理由和实测记录见 [「为什么最后没走钩子」](#-为什么最后没走钩子)。
+- ❌ **不需要 [`openai/codex-plugin-cc`](https://github.com/openai/codex-plugin-cc) 那个官方桥。**
+  纯文件契约 + `codex queue` 就够了，桥只是省一次复制粘贴。
+- ❌ **不需要单独装 Node.js** —— 用 npm 装 Codex 时它自己会带。
 
 ---
 
