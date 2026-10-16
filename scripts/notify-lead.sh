@@ -37,7 +37,10 @@ PROJ="$(cd "$PROJ" 2>/dev/null && pwd)" || {
 #    /path/to/proj 和 path/to/proj）⇒ 两种都要匹配。
 TID="$(python3 - "$PROJ" <<'PY'
 import os, sqlite3, sys
-db = os.path.expanduser("~/.codex/state_5.sqlite")
+# ⚠️ 别写死 ~/.codex —— 设了 CODEX_HOME 的人（很常见）会找不到库，
+#    然后这里静默返回空 → 上层报"没找到会话"，看起来像"你没开 Codex"，其实是路径不对。
+codex_home = os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex")
+db = os.path.join(codex_home, "state_5.sqlite")
 if not os.path.exists(db):
     sys.exit(0)
 proj = os.path.realpath(sys.argv[1])
