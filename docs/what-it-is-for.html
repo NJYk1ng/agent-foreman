@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>让「做完了」可证伪</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;900&display=swap">
+<style>
+/* ── 设计计划 ──────────────────────────────────────────────
+   布局：单栏 68ch。一条「机器可验 → 只有人能验」的渐变贯穿全页，
+        它是这个项目真正的骨架，所以做成一等公民而不是装饰。
+   颜色：纸(暖白) / 墨(带蓝的深灰，不是纯黑) / 靛蓝=领导 / 赭=工人 /
+        砖红=人（全页唯一强调色）/ 绿=通过
+   字体：Noto Serif SC 做标题（合同、文书的感觉），系统无衬线做正文，
+        系统等宽做终端片段。
+   ───────────────────────────────────────────────────────── */
+:root{
+  color-scheme: light;
+  --ink:#161c26;
+  --ink-soft:#4c5869;
+  --ink-faint:#7d8898;
+  --paper:#f7f8f4;
+  --paper-2:#eceee8;
+  --rule:#d4d8cf;
+  --lead:#2f4a6b;
+  --crew:#8a6a2f;
+  --human:#b4553c;
+  --ok:#3f7a52;
+
+  --f-display:"Noto Serif SC", "Songti SC", "SimSun", Georgia, serif;
+  --f-body:-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+           "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --f-mono:ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+           "Liberation Mono", monospace;
+
+  --step--1:clamp(.78rem,.76rem + .1vw,.84rem);
+  --step-0:clamp(.95rem,.92rem + .15vw,1.03rem);
+  --step-1:clamp(1.12rem,1.05rem + .35vw,1.3rem);
+  --step-2:clamp(1.4rem,1.25rem + .7vw,1.8rem);
+  --step-3:clamp(1.9rem,1.5rem + 1.8vw,2.9rem);
+  --step-4:clamp(2.4rem,1.7rem + 3vw,4rem);
+
+  --gut:max(16px, env(safe-area-inset-left, 0px));
+  --gut-r:max(16px, env(safe-area-inset-right, 0px));
+  --measure:68ch;
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --ink:#e9eae4;
+    --ink-soft:#a9b2bf;
+    --ink-faint:#79828f;
+    --paper:#12161d;
+    --paper-2:#1a2029;
+    --rule:#2d3542;
+    --lead:#82a8d4;
+    --crew:#cfa963;
+    --human:#e58a70;
+    --ok:#6ec08c;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ink:#e9eae4;
+  --ink-soft:#a9b2bf;
+  --ink-faint:#79828f;
+  --paper:#12161d;
+  --paper-2:#1a2029;
+  --rule:#2d3542;
+  --lead:#82a8d4;
+  --crew:#cfa963;
+  --human:#e58a70;
+  --ok:#6ec08c;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:var(--step-0);
+  line-height:1.75;
+  padding-block:0 env(safe-area-inset-bottom, 0px);
+  padding-left:var(--gut);
+  padding-right:var(--gut-r);
+}
+
+.wrap{max-width:var(--measure);margin-inline:auto;padding-block:clamp(48px,9vh,104px)}
+
+/* ── 排版 ───────────────────────────────────────────────── */
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.25;margin:0}
+h1{font-weight:900;font-size:var(--step-4);letter-spacing:-.01em}
+h2{font-weight:600;font-size:var(--step-2);margin-block:0 .9rem}
+h3{font-weight:600;font-size:var(--step-1);margin-block:0 .45rem}
+p{margin:0 0 1rem}
+p:last-child{margin-bottom:0}
+strong{font-weight:600;color:var(--ink)}
+a{color:var(--human);text-underline-offset:.22em}
+
+.lede{font-size:var(--step-1);color:var(--ink-soft);max-width:52ch}
+.eyebrow{
+  font-family:var(--f-mono);
+  font-size:var(--step--1);
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  margin:0 0 .9rem;
+}
+section{padding-block:clamp(38px,6vh,68px);border-top:1px solid var(--rule)}
+section:first-of-type{border-top:0;padding-top:clamp(24px,4vh,42px)}
+
+code{
+  font-family:var(--f-mono);
+  font-size:.9em;
+  background:var(--paper-2);
+  border:1px solid var(--rule);
+  border-radius:3px;
+  padding:.08em .38em;
+}
+
+/* ── 首屏 ───────────────────────────────────────────────── */
+.hero{border-top:0;padding-block:0 clamp(30px,5vh,54px)}
+.hero .lede{margin-top:1.1rem}
+.byline{
+  margin-top:1.6rem;
+  font-family:var(--f-mono);
+  font-size:var(--step--1);
+  color:var(--ink-faint);
+}
+.byline a{color:var(--ink-soft)}
+
+/* ── 分级的渐变条：全页的骨架 ─────────────────────────────── */
+.spectrum{margin-block:2.4rem 1.6rem}
+.spectrum .bar{
+  height:10px;
+  border-radius:5px;
+  background:linear-gradient(90deg,
+    var(--lead) 0%, var(--lead) 26%,
+    var(--crew) 40%, var(--crew) 62%,
+    var(--human) 76%, var(--human) 100%);
+}
+.spectrum .ends{
+  display:flex;justify-content:space-between;
+  margin-top:.55rem;
+  font-family:var(--f-mono);
+  font-size:var(--step--1);
+  color:var(--ink-faint);
+  gap:1rem;
+}
+.spectrum .ends span:last-child{text-align:right}
+
+.levels{
+  display:grid;
+  gap:clamp(14px,2.4vw,22px);
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));
+  margin-top:2rem;
+}
+.level{
+  border-top:4px solid var(--c);
+  padding-top:.85rem;
+}
+.level[data-k="cmd"]{--c:var(--lead)}
+.level[data-k="obs"]{--c:var(--crew)}
+.level[data-k="site"]{--c:var(--human)}
+.level .tag{
+  font-family:var(--f-mono);
+  font-size:var(--step--1);
+  color:var(--c);
+  letter-spacing:.04em;
+}
+.level h3{margin-top:.3rem;font-size:var(--step-1)}
+.level p{color:var(--ink-soft);font-size:var(--step-0);margin:0}
+.level .who{
+  margin-top:.6rem;
+  font-family:var(--f-mono);
+  font-size:var(--step--1);
+  color:var(--ink-faint);
+}
+
+/* ── 两栏分工 ───────────────────────────────────────────── */
+.roles{
+  display:grid;gap:clamp(14px,2.4vw,22px);
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));
+  margin-top:1.6rem;
+}
+.role{border-left:3px solid var(--c);padding-left:1rem}
+.role[data-k="lead"]{--c:var(--lead)}
+.role[data-k="crew"]{--c:var(--crew)}
+.role h3{color:var(--c);font-family:var(--f-body);font-size:var(--step-1);font-weight:600}
+.role ul{margin:.5rem 0 0;padding-left:1.1em;color:var(--ink-soft)}
+.role li{margin-bottom:.28rem}
+
+/* ── 终端片段 ───────────────────────────────────────────── */
+pre{
+  font-family:var(--f-mono);
+  font-size:var(--step--1);
+  line-height:1.65;
+  background:var(--paper-2);
+  border:1px solid var(--rule);
+  border-radius:4px;
+  padding:.9rem 1rem;
+  overflow-x:auto;
+  margin:0 0 1rem;
+}
+pre b{color:var(--ok);font-weight:600}
+pre i{color:var(--ink-faint);font-style:normal}
+
+/* ── 规矩清单：确实是按时间顺序长出来的 ────────────────────── */
+.rules{list-style:none;margin:1.4rem 0 0;padding:0;display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.rules li{
+  background:var(--paper);
+  padding:.85rem 1rem;
+  display:grid;
+  gap:.1rem .9rem;
+  grid-template-columns:auto 1fr;
+  align-items:baseline;
+}
+.rules .n{
+  font-family:var(--f-mono);
+  font-size:var(--step--1);
+  color:var(--ink-faint);
+  font-variant-numeric:tabular-nums;
+}
+.rules .t{font-weight:600}
+.rules .w{
+  grid-column:2;
+  font-family:var(--f-mono);
+  font-size:var(--step--1);
+  color:var(--ink-faint);
+}
+
+/* ── 不适用的场景 ───────────────────────────────────────── */
+.notfor{margin-top:1.4rem;border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.notfor div{
+  display:grid;grid-template-columns:1fr;
+  gap:.15rem;
+  padding:.8rem 1rem;
+  border-top:1px solid var(--rule);
+}
+.notfor div:first-child{border-top:0}
+.notfor b{font-weight:600}
+.notfor span{color:var(--ink-soft);font-size:var(--step-0)}
+
+/* ── 收尾 ───────────────────────────────────────────────── */
+.closer{
+  border-top:1px solid var(--rule);
+  padding-block:clamp(38px,6vh,68px);
+}
+.closer p{
+  font-family:var(--f-display);
+  font-weight:600;
+  font-size:var(--step-2);
+  line-height:1.45;
+  text-wrap:balance;
+  color:var(--ink);
+  max-width:34ch;
+}
+footer{
+  border-top:1px solid var(--rule);
+  padding-block:1.6rem 2.4rem;
+  font-family:var(--f-mono);
+  font-size:var(--step--1);
+  color:var(--ink-faint);
+  display:flex;flex-wrap:wrap;gap:.5rem 1.4rem;
+}
+
+@media (max-width:420px){
+  .rules li{grid-template-columns:1fr}
+  .rules .w{grid-column:1}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+:focus-visible{outline:2px solid var(--human);outline-offset:3px;border-radius:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <p class="eyebrow">agent-foreman</p>
+  <h1>让「做完了」<br>变得可证伪</h1>
+  <p class="lede">
+    一个 AI 单独干活，最大的毛病不是干得差，是它会说「我做完了」——
+    而你没有证据反驳。这个项目不解决「怎么让 AI 更聪明」，它解决的是
+    <strong>「凭什么信它」</strong>。
+  </p>
+  <p class="byline">
+    <a href="https://github.com/NJYk1ng/agent-foreman">github.com/NJYk1ng/agent-foreman</a>
+    · Apache-2.0 · 已被三轮真实任务打磨
+  </p>
+</header>
+
+<section>
+  <h2>它是什么</h2>
+  <p>
+    不是多 agent 框架。是<strong>一套让两个 AI 互相盯着的规矩</strong>。
+  </p>
+  <p>
+    两个 agent 不直接通信，只通过项目里 <code>.foreman/</code> 的四个文件交接：
+    <code>PLAN</code>（领导写）、<code>STATUS</code>（工人写）、
+    <code>BLOCKED</code>（工人写）、<code>REVIEW</code>（领导写）。
+    谁说什么、什么算做完了、谁有权说「通过」——全在这四份文件里定死。
+  </p>
+</section>
+
+<section>
+  <h2>骨架：三种「不知道」要分开</h2>
+  <p>
+    大部分 AI 协作翻车，是把三种完全不同的「不知道」混成了一锅。
+    这个项目的核心装置，就是把它们分开，并且明确<strong>谁有资格判哪一种</strong>。
+  </p>
+
+  <div class="spectrum">
+    <div class="bar" role="img" aria-label="从机器可验渐变到只有人能验"></div>
+    <div class="ends">
+      <span>机器可验</span>
+      <span>只有人在场能验</span>
+    </div>
+  </div>
+
+  <div class="levels">
+    <div class="level" data-k="cmd">
+      <div class="tag">[命令]</div>
+      <h3>跑一下就知道</h3>
+      <p>写得出命令、比得了输出。文件在不在、有没有外链、语法过不过。</p>
+      <div class="who">谁都能验 → 工人自证，领导重跑</div>
+    </div>
+    <div class="level" data-k="obs">
+      <div class="tag">[观察]</div>
+      <h3>看个能观察的事实</h3>
+      <p>有具体数值或可 grep 的引文。「实测 32.1Hz」「日志第 142 行」。</p>
+      <div class="who">谁都能验 → 但「我读过第 2 节」不算证据</div>
+    </div>
+    <div class="level" data-k="site">
+      <div class="tag">[现场]</div>
+      <h3>只有人在场能判</h3>
+      <p>像不像、好不好看、现场那几秒顺不顺。<strong>写不出命令，也观察不了。</strong></p>
+      <div class="who">只有人能验 → 两个 AI 都不许碰</div>
+    </div>
+  </div>
+
+  <p style="margin-top:1.8rem">
+    <code>[现场]</code> 那一条是整套东西的关键。工人没有眼睛，领导也没有眼睛——
+    <strong>谁说「通过」都是耍流氓</strong>。所以规矩是：谁都不许判，只能写
+    <code>⏳ 待现场验证</code>，把复现步骤写细到照着做就行，交给人。
+  </p>
+</section>
+
+<section>
+  <h2>分工：贵的只花在判断上</h2>
+  <p>
+    前提挺现实：Claude 在中国会封号、还贵；Codex 管得松，但订阅是硬上限；
+    DeepSeek 便宜。所以按「需要什么」分，而不是按「谁更聪明」分。
+  </p>
+  <div class="roles">
+    <div class="role" data-k="lead">
+      <h3>领导 · Codex</h3>
+      <ul>
+        <li>拆需求、写验收标准</li>
+        <li>审工人的产出、独立复核</li>
+        <li>工人卡住时给方向</li>
+        <li><strong>不写代码</strong></li>
+      </ul>
+    </div>
+    <div class="role" data-k="crew">
+      <h3>工人 · Claude Code</h3>
+      <ul>
+        <li>按 PLAN 实现</li>
+        <li>逐条自证、贴真实输出</li>
+        <li>写 STATUS 汇报</li>
+        <li>卡住写 BLOCKED，不硬撑</li>
+      </ul>
+    </div>
+  </div>
+  <p style="margin-top:1.6rem">
+    工人干完活会<strong>自动把领导叫醒</strong>。领导醒来的第一件事不是干活，是问人：
+  </p>
+  <pre>工人交了 .foreman/STATUS.md：T1 标为 UNVERIFIED，AC1 已通过，
+AC2–AC4 待你现场验收。要我现在审查吗？</pre>
+  <p>
+    你说「审」它才动手。<strong>花领导额度的动作，永远有人按过手印。</strong>
+  </p>
+</section>
+
+<section>
+  <h2>能指望它什么</h2>
+
+  <h3>一、把「agent 说自己做完了」换成「证据说话」</h3>
+  <p>
+    工人必须贴<strong>真实命令输出</strong>，不许复述、不许概括。领导必须
+    <strong>自己把每一条重跑一遍</strong>，不许采信。
+  </p>
+  <p>
+    实测有效：某轮工人贴了 6 个命令块，领导只重跑了 1 条就给了通过。
+    把「每一条都要自己重跑」写进规矩之后，下一轮它跑满了 6 条，
+    还专开一节记录复核过程——腿部运动学采样 10000 个相位，比工人自己还狠。
+  </p>
+
+  <h3>二、角色和边界长在 agent 身上，不用每次交代</h3>
+  <p>
+    跑一次 <code>./install.sh</code>，两个 agent 的<strong>全局记忆</strong>里就写进了
+    「你该干什么、不该干什么、什么情况下完全不用管这套」。
+  </p>
+  <p>
+    实测：需求方只说了一句「读 REQUIREMENT.md，出 PLAN」，
+    <strong>没告诉它「你是领导」</strong>——它自己认出了这是 agent-foreman 流程，
+    自己去读了对应 skill，自己写出了计划。
+  </p>
+
+  <h3>三、判不了的事，它会说判不了</h3>
+  <pre>T1/AC1 [命令]  ✅ 已独立复现
+T1/AC3 [现场]  ⏸ 领导无法独立判定 —— 需求方已验通过，记录在 STATUS.md</pre>
+  <p>
+    一个不肯说「我证不了」的系统，你没法信它说的任何一句「通过了」。
+  </p>
+</section>
+
+<section>
+  <h2>规矩是踩出来的，不是想出来的</h2>
+  <p>
+    下面五条全部来自真实任务翻车后的复盘。每一条都有原话、有现场记录，
+    写进了 <a href="contract.md">契约</a> 和对应的 skill 里。
+  </p>
+  <ol class="rules">
+    <li><span class="n">01</span><span class="t">证据要可独立核对，章节指针不算证据</span><span class="w">第一次闭环</span></li>
+    <li><span class="n">02</span><span class="t">人闸还要求可见性</span><span class="w">第一次闭环</span></li>
+    <li><span class="n">03</span><span class="t">不许用「留痕」替代「验证」</span><span class="w">pelican-bike 第 1 轮</span></li>
+    <li><span class="n">04</span><span class="t">工人贴的每一条命令，领导都要自己重跑</span><span class="w">pelican-bike 第 2 轮</span></li>
+    <li><span class="n">05</span><span class="t">两种「无法判定」要分开写，别让人以为他还没验</span><span class="w">pelican-bike 第 3 轮</span></li>
+  </ol>
+  <p style="margin-top:1.4rem">
+    第 3 条是个好例子：工人把「断网也能打开」记成了通过，
+    只在旁边加了句备注说「不确定有没有真断网试过」。
+    领导打回了，原话是<strong>「应记为无法判定，不能据此标为 DONE」</strong>——
+    备注是写给自己看的，勾是写给对方看的。
+  </p>
+</section>
+
+<section>
+  <h2>它不适合什么</h2>
+  <div class="notfor">
+    <div>
+      <b>验收标准说不清的任务</b>
+      <span>写小说、做设计、调手感——判据在人眼，<code>[命令]</code> 那一级根本立不起来。</span>
+    </div>
+    <div>
+      <b>一个 agent 就够的小活</b>
+      <span>上一整套是负担，不如直接干。</span>
+    </div>
+    <div>
+      <b>需要实时商量的事</b>
+      <span>它是异步的，靠文件交接，不是对话。</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>说清楚哪里还不顺手</h2>
+  <p>
+    工人被叫醒那一侧，<strong>现在每轮要人敲一下</strong>。这是刻意留的。
+  </p>
+  <p>
+    自动叫醒试过两条路，都放弃了：文件监听有个已知缺陷——agent 一跑
+    <code>cd</code> 命令，监听就被悄悄解除，而且不报错；
+    另一条要走 Claude Code 内部未公开的套接字协议，逆向出来下次升级就可能静默失效。
+  </p>
+  <p>
+    <strong>每轮敲一下的代价是两三秒，换来的是这套东西永远不会哪天偷偷不灵。</strong>
+    完整理由写在 <a href="https://github.com/NJYk1ng/agent-foreman#-为什么最后没走钩子">README</a> 里。
+  </p>
+</section>
+
+<div class="closer">
+  <p>它不让你更快，它让你更敢信。</p>
+</div>
+
+<footer>
+  <span>agent-foreman</span>
+  <span>Apache-2.0</span>
+  <span><a href="https://github.com/NJYk1ng/agent-foreman">github.com/NJYk1ng/agent-foreman</a></span>
+</footer>
+
+</div>
+</body>
+</html>
