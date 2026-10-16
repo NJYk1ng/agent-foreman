@@ -1,0 +1,15 @@
+# Credentials — never commit these
+.env
+.env.*
+*.key
+settings.local.json
+
+# The contract directory is committed on purpose: it is the audit trail.
+# Keep it out of the ignore list.
+!.foreman/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
