@@ -1,0 +1,658 @@
+<title>agent-foreman</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+/* ============================================================
+   agent-foreman — 展示页
+   Layout: 单栏阅读，正文 62ch；四个文件卡 2×2；循环图与表格满宽
+   ============================================================ */
+:root {
+  /* 中性色：冷偏石墨（不是纯灰） */
+  --paper:   #f6f7f8;
+  --surface: #ffffff;
+  --raise:   #eef0f3;
+  --line:    #dce0e6;
+  --line-2:  #c6ccd4;
+  --ink:     #14181d;
+  --ink-2:   #414a55;
+  --ink-3:   #6d7784;
+
+  /* 两个角色，两条色 —— 全页一致 */
+  --lead:    #a9571f;   /* 领导 · 贵 · 判断力 */
+  --lead-bg: #fdf3ea;
+  --crew:    #14646d;   /* 工人 · 便宜 · 耐力 */
+  --crew-bg: #eaf4f5;
+
+  --ok:      #356b35;
+  --warn:    #8a6512;
+
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body:    "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --f-mono:    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --step-0: 1rem;
+  --step-1: 1.0625rem;
+  --step-2: 1.3125rem;
+  --step-3: 1.75rem;
+  --step-4: 2.5rem;
+  --step-5: 3.25rem;
+
+  --radius: 6px;
+  --maxw: 68rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper:   #101418;
+    --surface: #171c22;
+    --raise:   #1e242b;
+    --line:    #2a3138;
+    --line-2:  #3a434c;
+    --ink:     #e6e9ed;
+    --ink-2:   #aab3bd;
+    --ink-3:   #7b8590;
+    --lead:    #dd9a5f;
+    --lead-bg: #2a1f16;
+    --crew:    #62b9c3;
+    --crew-bg: #12262a;
+    --ok:      #7fb27f;
+    --warn:    #d4ab55;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper:   #101418;
+  --surface: #171c22;
+  --raise:   #1e242b;
+  --line:    #2a3138;
+  --line-2:  #3a434c;
+  --ink:     #e6e9ed;
+  --ink-2:   #aab3bd;
+  --ink-3:   #7b8590;
+  --lead:    #dd9a5f;
+  --lead-bg: #2a1f16;
+  --crew:    #62b9c3;
+  --crew-bg: #12262a;
+  --ok:      #7fb27f;
+  --warn:    #d4ab55;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: var(--step-1);
+  line-height: 1.62;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 clamp(48px, 8vw, 96px);
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: var(--maxw); margin-inline: auto; }
+.prose { max-width: 62ch; }
+
+/* ---------- 页头 ---------- */
+header.top {
+  padding-block: clamp(40px, 7vw, 80px) clamp(28px, 4vw, 44px);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+h1 {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(2.2rem, 6vw, var(--step-5));
+  line-height: 1.04;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+  margin: 0;
+}
+.thesis {
+  font-size: var(--step-2);
+  line-height: 1.45;
+  color: var(--ink-2);
+  max-width: 40ch;
+  margin: 0;
+  text-wrap: balance;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-family: var(--f-mono);
+  font-size: 0.78rem;
+  padding: 3px 9px;
+  border: 1px solid var(--line-2);
+  border-radius: 100px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.chip.done { border-color: var(--ok); color: var(--ok); }
+
+/* ---------- 通用节 ---------- */
+section { padding-block: clamp(40px, 6vw, 72px); border-bottom: 1px solid var(--line); }
+section:last-of-type { border-bottom: 0; }
+h2 {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: var(--step-3);
+  letter-spacing: -0.014em;
+  margin: 0 0 6px;
+  text-wrap: balance;
+}
+.sub {
+  font-family: var(--f-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  display: block;
+  margin-bottom: 14px;
+}
+p { margin: 0 0 1em; }
+p:last-child { margin-bottom: 0; }
+strong { font-weight: 600; color: var(--ink); }
+code {
+  font-family: var(--f-mono);
+  font-size: 0.875em;
+  background: var(--raise);
+  padding: 0.12em 0.4em;
+  border-radius: 4px;
+}
+a { color: var(--crew); }
+
+/* ---------- 循环图 ---------- */
+.loop { display: flex; flex-direction: column; align-items: stretch; gap: 0; margin-top: 30px; }
+.node {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-2);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+}
+.node .who {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: var(--step-2);
+  letter-spacing: -0.01em;
+}
+.node .role { color: var(--ink-2); font-size: var(--step-0); }
+.node .tag {
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 100px;
+  margin-left: auto;
+}
+.node.lead { border-left-color: var(--lead); }
+.node.lead .who { color: var(--lead); }
+.node.lead .tag { background: var(--lead-bg); color: var(--lead); }
+.node.crew { border-left-color: var(--crew); }
+.node.crew .who { color: var(--crew); }
+.node.crew .tag { background: var(--crew-bg); color: var(--crew); }
+.node.you { border-left-color: var(--line-2); }
+.node.you .who { color: var(--ink-2); font-size: var(--step-0); font-family: var(--f-mono); font-weight: 500; }
+
+.link {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding-block: 10px;
+  font-family: var(--f-mono);
+  font-size: 0.78rem;
+  color: var(--ink-3);
+}
+.link .down { text-align: right; color: var(--lead); }
+.link .up { text-align: left; color: var(--crew); }
+.link .rail {
+  width: 2px;
+  height: 34px;
+  background: linear-gradient(var(--line-2), var(--line-2));
+  position: relative;
+}
+.link .rail::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -1px;
+  transform: translateX(-50%);
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 6px solid var(--line-2);
+}
+@media (max-width: 560px) {
+  .link { grid-template-columns: 1fr; text-align: center; gap: 2px; }
+  .link .down, .link .up { text-align: center; }
+  .link .rail { justify-self: center; height: 26px; }
+}
+
+/* ---------- 文件卡 ---------- */
+.files {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 14px;
+  margin-top: 26px;
+}
+.file {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.file .name {
+  font-family: var(--f-mono);
+  font-weight: 500;
+  font-size: var(--step-0);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.file .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.file.w-lead .dot { background: var(--lead); }
+.file.w-crew .dot { background: var(--crew); }
+.file .by {
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.file .by b { color: var(--lead); font-weight: 500; }
+.file.w-crew .by b { color: var(--crew); }
+.file ul { margin: 0; padding-left: 1.05em; color: var(--ink-2); font-size: var(--step-0); }
+.file li { margin-bottom: 4px; }
+.file li:last-child { margin-bottom: 0; }
+
+/* ---------- 表格 ---------- */
+.scroll { overflow-x: auto; margin-top: 24px; }
+table { border-collapse: collapse; width: 100%; min-width: 34rem; font-size: var(--step-0); }
+th, td { text-align: left; padding: 10px 14px 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th {
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+tbody tr:last-child td { border-bottom: 0; }
+td.mono, th.mono { font-family: var(--f-mono); font-size: 0.82rem; }
+.side-claude { color: var(--crew); font-family: var(--f-mono); font-size: 0.82rem; }
+.side-codex { color: var(--lead); font-family: var(--f-mono); font-size: 0.82rem; }
+.side-both { color: var(--ink-2); font-family: var(--f-mono); font-size: 0.82rem; }
+
+/* ---------- 演示（真东西） ---------- */
+.demo { display: grid; grid-template-columns: 1fr; gap: 18px; margin-top: 26px; }
+@media (min-width: 860px) { .demo { grid-template-columns: 1fr 1fr; } }
+.term {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.term .bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--raise);
+  font-family: var(--f-mono);
+  font-size: 0.76rem;
+  color: var(--ink-3);
+}
+.term .bar .lamp { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.term.verdict-block .bar .lamp { background: var(--warn); }
+.term.verdict-fix .bar .lamp { background: var(--ok); }
+.term pre {
+  margin: 0;
+  padding: 16px;
+  font-family: var(--f-mono);
+  font-size: 0.8rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--ink-2);
+}
+.term pre .k { color: var(--ink); font-weight: 500; }
+.term pre .g { color: var(--ok); }
+.term pre .w { color: var(--warn); font-weight: 500; }
+.term pre .lead { color: var(--lead); }
+.term pre .crew { color: var(--crew); }
+.term .note {
+  padding: 12px 16px 15px;
+  border-top: 1px dashed var(--line);
+  font-size: var(--step-0);
+  color: var(--ink-2);
+}
+
+/* ---------- 实测数字 ---------- */
+.figs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-top: 26px;
+}
+.fig { background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 4px; }
+.fig .n {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: var(--step-3);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.fig .l { font-size: 0.82rem; color: var(--ink-2); }
+.fig .src { font-family: var(--f-mono); font-size: 0.7rem; color: var(--ink-3); margin-top: auto; padding-top: 8px; }
+
+/* ---------- 页脚 ---------- */
+footer.bottom { padding-block: 48px 0; color: var(--ink-3); font-size: var(--step-0); }
+footer.bottom .row { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: baseline; }
+footer.bottom .k { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; }
+footer.bottom a { color: var(--ink-2); }
+
+:focus-visible { outline: 2px solid var(--crew); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <span class="eyebrow">多 agent 协作 · Apache-2.0 · pre-alpha</span>
+  <h1>agent-foreman</h1>
+  <p class="thesis">让贵的模型只动脑，让便宜的模型动手。</p>
+  <div class="chips">
+    <span class="chip">4 个 skill</span>
+    <span class="chip">5 次提交</span>
+    <span class="chip done">闭环实测跑通</span>
+    <span class="chip done">Codex 侧已验证加载</span>
+  </div>
+</header>
+
+<section>
+  <span class="sub">它解决什么</span>
+  <h2>贵的模型贵在判断力，不在打字速度</h2>
+  <div class="prose">
+    <p>长会话的成本是<strong>平方级</strong>的 —— 每一轮都要把整个上下文重发一遍。实测一个真实会话里
+      <code>cache_read</code> 占了全部计费 token 的 <strong>99%</strong>。而订阅制套餐卡的是
+      <strong>额度</strong>，不是钱：额度一光，流程当场停在任务做到一半的地方。</p>
+    <p>所以正确的分工不是"谁强谁全干"，是<strong>让贵的那一方只持有小上下文</strong>。
+      这也正是真实工程团队的样子：一个好的技术负责人不写大部分代码，他定方向、拆任务、审结果 ——
+      然后<strong>亲自写那 10% 真正难的</strong>。</p>
+    <p>这个项目把那套结构装进两个 agent。</p>
+  </div>
+</section>
+
+<section>
+  <span class="sub">怎么运转</span>
+  <h2>两个 agent 不共享会话，只共享四个文件</h2>
+  <div class="prose">
+    <p>不做"实时聊天"，因为两个 agent 都是<strong>回合制</strong>的 —— 跑某一轮的时候它并不在监听。
+      所谓实时最多是"下一个回合边界"，而<strong>每一条塞进上下文的消息，都会在之后每一轮被重发一次</strong>。</p>
+    <p>所以同步点就是这四份文件。协议刻意做得很土：<strong>能 <code>cat</code> 出来的协议，才是能调试的协议。</strong></p>
+  </div>
+
+  <div class="loop">
+    <div class="node you">
+      <span class="who">你</span>
+      <span class="role">提需求 · 决定什么时候花额度</span>
+    </div>
+    <div class="link">
+      <span></span><span class="rail"></span><span></span>
+    </div>
+
+    <div class="node lead">
+      <span class="who">领导 · Codex</span>
+      <span class="role">拆任务 · 审代码 · 亲手写最难的 10%</span>
+      <span class="tag">订阅 · 额度是硬上限</span>
+    </div>
+    <div class="link">
+      <span class="down">PLAN.md ↓</span>
+      <span class="rail"></span>
+      <span class="up">↑ REVIEW.md</span>
+    </div>
+
+    <div class="node crew">
+      <span class="who">工人 · Claude Code</span>
+      <span class="role">实现 · 逐条自证 · 卡住了写求助</span>
+      <span class="tag">便宜端点 · 长上下文</span>
+    </div>
+    <div class="link">
+      <span></span>
+      <span class="rail"></span>
+      <span class="up">↑ STATUS.md · BLOCKED.md</span>
+    </div>
+
+    <div class="node you">
+      <span class="who">git</span>
+      <span class="role">四份文件提交进仓库 —— 它是审计线索，不是缓存</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="sub">契约</span>
+  <h2>四个文件，各有唯一的作者</h2>
+  <div class="prose">
+    <p>工人<strong>不许</strong>改 <code>PLAN.md</code>，领导<strong>不许</strong>改 <code>STATUS.md</code>。
+      有意见写进自己那份文件。</p>
+  </div>
+
+  <div class="files">
+    <div class="file w-lead">
+      <span class="name"><span class="dot"></span>PLAN.md</span>
+      <span class="by">只能 <b>领导</b> 写</span>
+      <ul>
+        <li>每个任务带 <strong>目标 / 谁写 / 依赖 / 验收标准 / 边界</strong></li>
+        <li>验收标准必须落到 <code>[命令]</code> / <code>[观察]</code> / <code>[现场]</code> 之一</li>
+        <li>难的那 10% 标 <code>谁写：领导</code> —— 由领导亲自写</li>
+      </ul>
+    </div>
+    <div class="file w-crew">
+      <span class="name"><span class="dot"></span>STATUS.md</span>
+      <span class="by">只能 <b>工人</b> 写</span>
+      <ul>
+        <li>每条验收标准真跑一遍，<strong>贴真实输出</strong>，不许复述</li>
+        <li>状态词只用五个，且 <strong><code>UNVERIFIED</code> ≠ <code>DONE</code></strong></li>
+        <li><code>[现场]</code> 那条只能写 <code>⏳</code> + 复现步骤 —— 工人证不了它</li>
+      </ul>
+    </div>
+    <div class="file w-crew">
+      <span class="name"><span class="dot"></span>BLOCKED.md</span>
+      <span class="by">只能 <b>工人</b> 写</span>
+      <ul>
+        <li>卡在哪 / <strong>已试过什么</strong> / 需要哪个具体决定</li>
+        <li>「已试过」那一节是省额度的关键 —— 没它，领导会把排除过的路再建议一遍</li>
+      </ul>
+    </div>
+    <div class="file w-lead">
+      <span class="name"><span class="dot"></span>REVIEW.md</span>
+      <span class="by">只能 <b>领导</b> 写</span>
+      <ul>
+        <li>只报<strong>本次改动引入</strong>的、<strong>能演示</strong>的问题</li>
+        <li>没找到就写「无发现」—— <strong>不许为凑数编一条</strong></li>
+        <li><code>[现场]</code> 那几条领导也判不了，只能判"复现步骤写没写清"</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="sub">四个 skill</span>
+  <h2>装到各自该去的那一侧</h2>
+  <div class="prose">
+    <p>两个 harness 的 skill 格式是同一套（<code>SKILL.md</code> + <code>name</code>/<code>description</code>），
+      但实测<strong>不自动同步</strong> —— 只放在 <code>~/.claude/skills/</code> 的 skill，Codex 看不到，反之亦然。</p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr><th>skill</th><th>装在哪</th><th>职责</th><th>关键约束</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">agent-contract</td>
+          <td class="side-both">两端都装</td>
+          <td>定义上面那份契约 —— 唯一必须两边一致的东西</td>
+          <td>正文自包含：skill 被拷到两端，读不到仓库里的 <code>docs/</code></td>
+        </tr>
+        <tr>
+          <td class="mono">tech-lead</td>
+          <td class="side-codex">Codex</td>
+          <td>需求 → 带验收标准的任务清单</td>
+          <td>强制 <code>谁写：领导</code> 字段；上下文要小，不许通读代码库</td>
+        </tr>
+        <tr>
+          <td class="mono">cross-review</td>
+          <td class="side-codex">Codex</td>
+          <td>对照验收标准逐条核对 + 审 diff</td>
+          <td>禁止自动触发（<code>allow_implicit_invocation: false</code>）—— 这是最花钱的一步</td>
+        </tr>
+        <tr>
+          <td class="mono">execute-plan</td>
+          <td class="side-claude">Claude Code</td>
+          <td>按 PLAN 干活 → 逐条自证 → 写 STATUS</td>
+          <td>不许把 <code>[现场]</code> 标成 ✅；不许自己去叫领导</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <span class="sub">实测</span>
+  <h2>它第一次跑就拒绝了给自己人盖章</h2>
+  <div class="prose">
+    <p>拿项目自己的两个提交做靶子，让 Codex 用 <code>cross-review</code> 审。
+      它按契约先查"工人的汇报够不够格被审"，然后 <strong>BLOCK 了</strong> —— 不给代码下结论。</p>
+  </div>
+
+  <div class="demo">
+    <div class="term verdict-block">
+      <div class="bar"><span class="lamp"></span>.foreman/REVIEW.md</div>
+<pre><span class="k"># REVIEW — 526d429 + 778f8c2</span>
+
+<span class="lead">&gt; 领导：Codex · 2026-10-16</span>
+
+## 结论：<span class="w">BLOCK</span>
+
+STATUS 汇报不完整，无法审。T2/AC3 <span class="k">[观察]</span>
+只写了"人工通读确认"及概括性说明，没有贴出
+可供独立核对的观察证据。</pre>
+      <div class="note">它没有说"看起来没问题"，也没有顺手把代码审了。契约第一节就写着：
+        <strong>先看工人的汇报够不够格被审</strong> —— 一份"每条都 ✅ 但没贴输出"的汇报，
+        让领导只能选择"信他"或"自己重跑一遍"，两个都比退回更贵。</div>
+    </div>
+
+    <div class="term verdict-fix">
+      <div class="bar"><span class="lamp"></span>.foreman/STATUS.md（改后）</div>
+<pre><span class="k">## T2 — 状态：DONE</span>
+
+- <span class="k">AC3 [观察]</span>: <span class="g">✅</span> 三处都在 —— 下面是可 grep 的引文
+
+  <span class="crew">$ grep -n '为什么用文件交接' docs/architecture.md</span>
+  <span class="g">28:</span>## 二、⭐ 为什么用文件交接，不用实时通信
+
+  <span class="crew">$ grep -n '停下来问' docs/architecture.md</span>
+  <span class="g">94:</span>一个"停下来问"的设计…比"全自动"的更可靠</pre>
+      <div class="note">修法不是"改个说法让它过"，是<strong>把结论换成能被 grep 到的东西</strong>。
+        章节指针不算证据 —— 领导要验证只能自己重读一遍，那这次汇报就白写了。</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="sub">这次实测改了什么</span>
+  <h2>两条契约规则，都是被真实失败逼出来的</h2>
+
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr><th>触发它的那个失败</th><th>补进契约的规则</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>第一次汇报写「人工通读确认，见第二节」，被 BLOCK —— 领导无法在不重读全文的前提下核对</td>
+          <td><strong><code>[观察]</code> 的证据必须能被 grep 到。</strong>章节指针不是证据</td>
+        </tr>
+        <tr>
+          <td>工具的初始形态把 Codex 的输出 capture 进调用方的管道，结果人只看到一个被 <code>tail</code> 截断的结尾 —— 而截掉的恰好是关键的 BLOCK 理由</td>
+          <td><strong>人闸要求可见性。</strong>光"经过人"不够，动作必须打在人能实时看到的窗口里，推理摘要必须开着</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <span class="sub">数字</span>
+  <h2>实测出来的，不是估的</h2>
+
+  <div class="figs">
+    <div class="fig">
+      <span class="n">7,300</span>
+      <span class="l">token —— <code>codex exec</code> 一句「好的」的底价</span>
+      <span class="src">那是系统提示词 + 工具定义的开销</span>
+    </div>
+    <div class="fig">
+      <span class="n">49,000</span>
+      <span class="l">token —— 一次真实 <code>cross-review</code> 的用量</span>
+      <span class="src">96 秒。差 7 倍，用错会让预算严重低估</span>
+    </div>
+    <div class="fig">
+      <span class="n">99%</span>
+      <span class="l">长会话里 <code>cache_read</code> 占的计费 token 比例</span>
+      <span class="src">成本的大头是"把发过的上下文再发一次"</span>
+    </div>
+    <div class="fig">
+      <span class="n">9</span>
+      <span class="l">条验收标准，第一次 dogfood 全部有结论</span>
+      <span class="src">4 个任务，其中 8 条 <code>[命令]</code> / <code>[观察]</code></span>
+    </div>
+  </div>
+</section>
+
+<footer class="bottom">
+  <div class="row">
+    <span><span class="k">安装</span> <code>./install.sh</code></span>
+    <span><span class="k">许可</span> Apache-2.0</span>
+    <span><span class="k">状态</span> 期一完成 · 期二（钩子）未做</span>
+  </div>
+  <p style="margin-top:18px; max-width:62ch;">
+    相关项目：<a href="https://github.com/sno-ai/sno-station-skills">sno-station-skills</a> 覆盖了相邻领域
+    （跨供应商评审、带完成定义的任务单、额度耗尽自动交接）。<strong>如果你手上是两个付费订阅，先读它。</strong>
+    本项目针对的是另一种约束：一个能放心依赖的订阅 + 一个便宜端点。
+  </p>
+</footer>
+
+</div>
