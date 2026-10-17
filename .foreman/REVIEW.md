@@ -1,15 +1,33 @@
-# REVIEW — T5 对齐契约、技能、测量数据和文档链接
-
-> 领导：Codex · 2026-10-17 · 对象：`c1d45db`（实现）、`3f8f994`（STATUS）
+# T6 Cross-review
 
 ## 结论：PASS
 
-无发现。
+审查提交：`702baa3`（实现）/ `6f9ab02`（STATUS）
 
-## 对照验收标准
+### AC1 — checker 与负向回归
 
-- T5/AC1 `[命令]` ✅ 独立运行计划中的 `rg` 命令，无输出，退出码 1。
-- T5/AC2 `[观察]` ✅ 独立运行 `python3 scripts/check-links.py`，输出 `链接检查通过：26 个本地链接/锚点`。
-- T5/AC3 `[观察]` ✅ 独立复核 STATUS 所列行号与内容：角色分配及困难任务处理规则一致；五种状态定义逐项一致；`[现场]` 的工人不得判通过、领导不得判通过及「无法判定」示例一致。
+- ✅ 独立运行 `./scripts/foreman-check.sh`：8 项检查通过。
+- ✅ 独立运行 `bash tests/test-foreman-check.sh`：`PASS=4 FAIL=0`。缺字段、缺护栏和语法错误用例均非零退出并定位问题。
+- ✅ 在临时根目录额外验证重复任务编号及非法 AC 级别：均非零退出并给出对应诊断。
 
-STATUS 中 5 条命令均已独立重跑。另运行 `git show --check --oneline c1d45db`，退出码 0。
+### AC2 — 安装器回归
+
+- ✅ 独立运行 `bash tests/test-install.sh`：`PASS=26 FAIL=0`。
+
+### AC3 — notify-lead 回归
+
+- ✅ 独立运行 `bash tests/test-notify-lead.sh`：`PASS=17 FAIL=0`。
+
+### AC4 — 链式命令与 CI
+
+- ✅ 独立运行计划中的链式命令 `./scripts/foreman-check.sh && bash tests/test-install.sh && bash tests/test-notify-lead.sh`：退出码 0。
+- ✅ 核对 `.github/workflows/ci.yml`：CI 执行同一组三条命令，并运行 checker 负向回归 `bash tests/test-foreman-check.sh`。
+- ✅ `git show --check --oneline 702baa3`：退出码 0。
+
+### 非阻断发现
+
+- [P2] `scripts/foreman-check.sh` 的任务字段检查只确认字段标签存在，未确认字段值非空。将任务中的 `- **边界**：` 值清空后，checker 仍报告全部检查通过并以 0 退出。建议校验冒号后的值非空（允许显式写“无”），并增加对应负向测试。该项不影响本次 AC，按 cross-review 规则不阻塞后续任务。
+
+### 隔离性
+
+安装器、notify-lead 和 checker 负向测试均在临时 HOME、临时数据库或临时根目录运行；复核未访问真实 HOME 或 Codex 数据库。
