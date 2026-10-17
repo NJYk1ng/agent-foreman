@@ -22,14 +22,9 @@ ROOT="$T/root"
 copy_fixture() {
     rm -rf "$ROOT"
     mkdir -p "$ROOT/.foreman" "$ROOT/templates" "$ROOT/skills/execute-plan" "$ROOT/scripts"
-    local plan="$REPO/.foreman/PLAN.md"
-    if [ ! -f "$plan" ]; then
-        plan="$(ls -t "$REPO"/.foreman/archive/*/PLAN.md 2>/dev/null | head -n1)"
-    fi
-    if [ -n "${plan:-}" ] && [ -f "$plan" ]; then
-        cp "$plan" "$ROOT/.foreman/PLAN.md"
-    else
-        cat > "$ROOT/.foreman/PLAN.md" <<'PLAN'
+    # 固定使用内置 T1 夹具：仓库归档计划的编号会变（T1-T7 / T8-T10 ...），
+    # 测试不能依赖“最新归档里一定有 T1”。
+    cat > "$ROOT/.foreman/PLAN.md" <<'PLAN'
 # PLAN — test fixture
 
 ### T1 test
@@ -41,7 +36,6 @@ copy_fixture() {
   - AC1 [命令] `true` → 0
 - **边界**：无
 PLAN
-    fi
     cp "$REPO/templates/AGENTS.md" "$REPO/templates/global-claude.md" "$ROOT/templates/"
     cp "$REPO/skills/execute-plan/SKILL.md" "$ROOT/skills/execute-plan/"
     cp "$REPO/install.sh" "$ROOT/"
