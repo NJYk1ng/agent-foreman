@@ -48,8 +48,8 @@ not by dollars. Once the quota is gone the workflow stops dead — mid-task, at 
 | **The crew** | endurance, and a **large** context | cheapest **endpoint** |
 
 This is also how real engineering teams work. A good tech lead does not write most of the code.
-They set direction, decompose the work, review the result — and personally write the 10% that is
-genuinely hard.
+They set direction, decompose the work, review the result — and turn the hardest parts into small,
+falsifiable steps the crew can prove.
 
 **agent-foreman** installs that structure into two agents.
 
@@ -106,7 +106,7 @@ agent-foreman is built for a different constraint:
 | **Roles** | interchangeable; either vendor can lead | **fixed and asymmetric**: Codex leads |
 | **Quota policy** | automatic handoff when quota runs out | **explicit budget + a human gate** |
 | **Footprint** | 31 skills, a CLI installer, a companion app | **4 skills, zero dependencies** |
-| **Who writes the hard 10%** | not specified | **the lead, by rule** |
+| **How hard tasks are handled** | not specified | **split into falsifiable steps; escalate after two attempts** |
 
 If your situation is "I have one subscription I can rely on, and one cheap API" — that is the gap
 this fills.
