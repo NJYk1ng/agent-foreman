@@ -1,8 +1,8 @@
 # STATUS — 编写 agent-foreman 实际使用指南
 
-> 工人：Claude Code (deepseek-flash[1m]) · 2026-10-17 · 提交：`c67b5a0` + 本次改动
+> 工人：Claude Code (deepseek-flash[1m]) · 2026-10-17 · 提交：`c8e106f`；P1 修复：本次提交
 
-## T15 编写安装与协作流程使用指南 — 状态：DONE
+## T15 编写安装与协作流程使用指南 — 状态：DONE（P1 修复后 AC2 通过，待领导复验）
 
 - **AC1 [命令]**: ✅
   ```
@@ -13,12 +13,31 @@
 - **AC2 [命令]**: ✅
   ```
   $ python3 - <<'PY'
-  ... required items check ...
+  from pathlib import Path
+  p = Path('docs/usage.md').read_text(encoding='utf-8')
+  required = [
+      './install.sh', './install.sh --project', '$tech-lead', '/execute-plan',
+      'notify-lead', '$cross-review', '.foreman/PLAN.md', '.foreman/STATUS.md',
+      '.foreman/REVIEW.md', '[现场]', '只是叫醒', '没有 .foreman/PLAN.md',
+  ]
+  missing = [item for item in required if item not in p]
+  assert not missing, f'missing required usage items: {missing}'
+  for phrase in ['Codex', 'Claude Code', 'BLOCKED.md', '--status', '只在 Codex']:
+      assert phrase in p, f'missing: {phrase}'
+  workflow = ['Codex PLAN', '人批准', 'Claude /execute-plan', 'notify-lead',
+              '人决定审核', 'Codex cross-review', '人判 [现场]', '归档']
+  positions = [p.find(step) for step in workflow]
+  assert all(pos >= 0 for pos in positions), f'missing workflow step: {workflow}'
+  assert positions == sorted(positions), 'workflow steps are out of order'
+  print('usage guide required items: OK')
+  print('workflow positions:', positions)
   PY
   usage guide required items: OK
-  AC2_rc=0
+  workflow positions: [2392, 2405, 2411, 2434, 2448, 2456, 2477, 2487]
+  ac2_rc=0
   ```
-  文档包含全局安装与 `--project` 差异及原因、推荐 A / 补救 B、新项目第一句话 A/B 两例、完整协作流程、常见坑、常用命令、归档；写明 `Codex PLAN → 人批准 → Claude /execute-plan → notify-lead → 人决定审核 → Codex cross-review → 人判 [现场] → 归档`，以及无 PLAN Claude 停止、lead/review skills 只在 Codex、`[现场]` 人判、`notify-lead` 只会叫醒。
+  P1 修复（2026-10-17）：按 REVIEW 补齐字面串 `只是叫醒`、`没有 .foreman/PLAN.md`，并避免 workflow 之前的「归档」提前命中；AC2 重新通过，待领导复验。
+  文档包含全局安装与 `--project` 差异及原因、推荐 A / 补救 B、新项目第一句话 A/B 两例、完整协作流程、常见坑、常用命令、归档；写明 `Codex PLAN → 人批准 → Claude /execute-plan → notify-lead → 人决定审核 → Codex cross-review → 人判 [现场] → 归档`，以及无 PLAN Claude 停止、lead/review skills 只在 Codex、`[现场]` 人判、`notify-lead` 只是叫醒。
 
 - **AC3 [命令]**: ✅
   ```

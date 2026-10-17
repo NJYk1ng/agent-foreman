@@ -1,6 +1,6 @@
 # STATUS — Benchmark pilot dry run
 
-> 工人：Claude Code (deepseek-flash[1m]) · 2026-10-17 · 提交：`71969db`（AC1 确认后更新本文件）
+> 工人：Claude Code (deepseek-flash[1m]) · 2026-10-17 · 提交：`71969db`；AC1 确认更新：`e203894`
 
 ## T13 单任务双方法 benchmark dry run — 状态：DONE
 

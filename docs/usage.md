@@ -1,6 +1,6 @@
 # 实际使用指南
 
-> 面向「装好之后到底怎么用」。安装、开工、交接、审核、现场确认、归档，全部按当前实现写。
+> 面向「装好之后到底怎么用」。安装、开工、交接、审核、现场确认、收尾，全部按当前实现写。
 
 ## 一、先选安装方式
 
@@ -88,11 +88,11 @@ mkdir .foreman
 | `.foreman/BLOCKED.md` | 工人 | 卡住两次后的求助；必须含「已试过」 |
 | `.foreman/REVIEW.md` | 领导 | 审核结论：`PASS` 或 `BLOCK` |
 
-- 一个 `.foreman/` 对应一个工作单元（一个 PR 的量级）；计划做完就归档。
+- 一个 `.foreman/` 对应一个工作单元（一个 PR 的量级）；计划做完就收进 archive。
 - 状态只有五个：`TODO` / `WIP` / `BLOCKED` / `UNVERIFIED` / `DONE`。
 - 验收标准只有三级：`[命令]` / `[观察]` / `[现场]`。
 - **`[现场]` 只能由人判**；工人只能写「⏳ 待现场验证」+ 复现步骤。**`UNVERIFIED` ≠ `DONE`。**
-- **没有 `.foreman/PLAN.md` 时，Claude 停止，不得从需求描述自行开工。**
+- **没有 .foreman/PLAN.md 时，Claude 停止，不得从需求描述自行开工。**
 - lead/review skills 只在 Codex 侧：`$tech-lead`、`$cross-review`；工人侧用 `/execute-plan`；`agent-contract` 两端共用。
 
 ## 四、完整流程
@@ -104,7 +104,7 @@ Codex PLAN → 人批准 → Claude /execute-plan → notify-lead → 人决定�
 1. **Codex 出计划**：`$tech-lead`（或项目 `AGENTS.md` 已让 Codex 进入领导角色）写 `.foreman/PLAN.md`。缺信息先问人。
 2. **人批准**：审任务是否一个工作单元、AC 是否可证、`[现场]` 是否写清「谁 / 在哪 / 做什么 / 什么算通过」；确认预算/范围。
 3. **Claude 执行**：`/execute-plan`。实现、跑 `[命令]`、核对 `[观察]`，写 `.foreman/STATUS.md`；`[现场]` 只写 ⏳ 和复现步骤。
-4. **叫醒领导**：Claude 跑 `notify-lead`。它**只会叫醒** Codex 把消息推进会话，不等于审核或批准。
+4. **叫醒领导**：Claude 跑 `notify-lead`。它**只是叫醒** Codex 把消息推进会话，不等于审核或批准。
 5. **人决定审不审**：审核花 Codex 额度，必须由人决定。
 6. **Codex 审核**：`$cross-review`。逐条重跑 `[命令]`、看 diff，写 `.foreman/REVIEW.md`；`[现场]` 只能写「无法判定」。
 7. **打回或放行**：`BLOCK` 时 Claude 按 REVIEW 修、更新 `STATUS.md`；`PASS` 后进入现场。
@@ -117,7 +117,7 @@ Codex PLAN → 人批准 → Claude /execute-plan → notify-lead → 人决定�
 - **在 Claude Code 里敲 `$tech-lead`**：Claude 只认 `/execute-plan`；`$tech-lead` / `$cross-review` 是 Codex 侧。
 - **没有 PLAN 就让 Claude 开工**：Claude 会停，并报告「这里没有计划，需要领导先写 PLAN」。
 - **把 `[现场]` 或 `UNVERIFIED` 写成 `DONE`**：工人不能替人判现场；只有人验证过才能标通过。
-- **把 `notify-lead` 当审核**：它只会叫醒；真正花额度的是 `$cross-review`，且要人发起。
+- **把 `notify-lead` 当审核**：它只是叫醒；真正花额度的是 `$cross-review`，且要人发起。
 - **审核时采信工人贴的输出**：领导要自己重跑命令。文本上分不出真跑还是凭记忆写的。
 - **改已派发的 AC 不重新声明未完成**：改 AC = 移动靶；必须先留痕，并把任务重新声明为未完成。
 - **把隐藏测试/grader 放进工人工作区**：不要提供给 agent；评分在工作区外跑。
@@ -163,4 +163,4 @@ python3 benchmarks/check_fixtures.py
 
 ## 八、一句话
 
-**Codex 拆需求、写 AC、审；Claude 实现、自证；人批计划、批审核、做 `[现场]` 验证。`notify-lead` 只会叫醒，不是审核。**
+**Codex 拆需求、写 AC、审；Claude 实现、自证；人批计划、批审核、做 `[现场]` 验证。`notify-lead` 只是叫醒，不是审核。**
