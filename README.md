@@ -12,6 +12,22 @@
 
 ---
 
+## TL;DR
+
+两个终端：**Codex 当领导，Claude Code 当工人**。
+
+```bash
+./install.sh
+```
+
+1. Codex 里：`$tech-lead <需求>` → 写出 `.foreman/PLAN.md`
+2. Claude Code 里：`/execute-plan` → 实现 + 自证 + 写 `.foreman/STATUS.md`
+3. 工人跑 `notify-lead` 叫醒领导；领导先问人，再审
+4. 自检：`./scripts/foreman-check.sh && bash tests/test-install.sh && bash tests/test-notify-lead.sh`
+5. 只看会叫醒谁、不发消息：`notify-lead --status`
+
+---
+
 ## 为什么需要它
 
 ### 壳（harness）和模型供应商是可以拆开的

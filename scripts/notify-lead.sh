@@ -26,6 +26,7 @@
 #   notify-lead "自定义消息"              # 改消息
 #   notify-lead "消息" /path/to/project   # 显式指定项目
 #   notify-lead --thread <id> "消息"      # 显式指定会话（跳过数据库查询）
+#   notify-lead --status [项目路径]        # 只读：看会选中哪个会话，不发消息
 #
 set -uo pipefail
 
@@ -33,6 +34,7 @@ SCRIPT_NAME="notify-lead"
 THREAD=""
 MSG=""
 PROJ_ARG=""
+STATUS_ONLY=0
 
 usage() {
     cat <<'EOF'
@@ -43,10 +45,19 @@ notify-lead — 通知领导（Codex）：这个项目该你干活了。
   notify-lead "自定义消息"              # 改消息
   notify-lead "消息" /path/to/project   # 显式指定项目
   notify-lead --thread <id> "消息"      # 显式指定会话（跳过数据库查询）
+  notify-lead --status [项目路径]        # 只读：看会选中哪个会话，不发消息
 EOF
 }
 
 add_positional() {
+    if [ "$STATUS_ONLY" = 1 ]; then
+        if [ -z "$PROJ_ARG" ]; then
+            PROJ_ARG="$1"
+            return
+        fi
+        printf '%s: --status 只接受一个项目路径\n' "$SCRIPT_NAME" >&2
+        exit 2
+    fi
     if [ -z "$MSG" ]; then
         MSG="$1"
     elif [ -z "$PROJ_ARG" ]; then
@@ -66,6 +77,9 @@ while [ $# -gt 0 ]; do
             ;;
         --thread=*)
             THREAD="${1#--thread=}"
+            ;;
+        --status)
+            STATUS_ONLY=1
             ;;
         -h|--help)
             usage
@@ -205,6 +219,12 @@ fi
 if [ -z "$TID" ]; then
     printf '%s: 没有选中任何会话。\n' "$SCRIPT_NAME" >&2
     exit 1
+fi
+
+if [ "$STATUS_ONLY" = 1 ]; then
+    printf 'project: %s\n' "$PROJ"
+    printf 'thread: %s\n' "$TID"
+    exit 0
 fi
 
 if ! command -v codex >/dev/null 2>&1; then

@@ -13,6 +13,22 @@ Agent skills that turn **Codex** into a tech lead — planning, reviewing, unblo
 
 ---
 
+## TL;DR
+
+Two terminals: **Codex leads, Claude Code crews**.
+
+```bash
+./install.sh
+```
+
+1. In Codex: `$tech-lead <requirement>` → writes `.foreman/PLAN.md`
+2. In Claude Code: `/execute-plan` → implements, self-verifies, writes `.foreman/STATUS.md`
+3. The crew runs `notify-lead`; the lead asks the human before reviewing
+4. Self-check: `./scripts/foreman-check.sh && bash tests/test-install.sh && bash tests/test-notify-lead.sh`
+5. Inspect the target session without sending: `notify-lead --status`
+
+---
+
 ## Why
 
 ### The harness and the model provider are separable

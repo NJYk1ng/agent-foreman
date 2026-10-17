@@ -444,6 +444,28 @@ T1/AC3 [现场]  领导无法独立判定 —— 需求方已验通过，记录�
 </section>
 
 <section>
+  <span class="sub">快速开始 / TL;DR</span>
+  <h2>两个终端，三步开工</h2>
+  <div class="prose">
+    <p>Codex 当领导，Claude Code 当工人。装一次，之后每个项目只要有 <code>.foreman/</code> 就能接上。</p>
+    <pre>./install.sh
+
+# Codex
+$tech-lead &lt;需求&gt;
+
+# Claude Code
+/execute-plan
+
+# 只读：看会叫醒哪个 Codex 会话，不发消息
+notify-lead --status
+
+# 检查 PLAN / 模板 / 脚本
+./scripts/foreman-check.sh</pre>
+    <p>完整步骤见 <a href="https://github.com/NJYk1ng/agent-foreman#快速开始">README 的快速开始</a>。</p>
+  </div>
+</section>
+
+<section>
   <h2>它不适合什么</h2>
   <div class="notfor">
     <div>

@@ -11,6 +11,8 @@
 #   6. 会话库缺失：退出码 10
 #   7. python3 缺失：退出码 5
 #   8. 语法检查
+#   9. --status 只读诊断：输出项目根和会话 ID，不调用 codex queue
+#  10. --status 无候选：非零退出并说明原因
 #
 set -uo pipefail
 
@@ -204,6 +206,52 @@ if bash -n "$SCRIPT"; then
     ok "bash -n notify-lead.sh"
 else
     bad "notify-lead.sh 语法错误"
+fi
+
+# ── 9. --status 只读诊断 ───────────────────────────────────
+printf '\n[9] --status 只读诊断\n'
+proj9="$T/proj9"
+mkdir -p "$proj9/.foreman"
+dbdir9="$T/db9"
+mkdir -p "$dbdir9"
+make_db "$dbdir9/state_5.sqlite" "
+INSERT INTO threads VALUES ('interactive-status','$proj9','vscode','user','Codex Desktop',0,100,100,100,'main');
+"
+out="$(run_notify "$proj9" "$dbdir9" "$BIN:$PATH" --status)"; rc=$?
+assert_eq "退出码为 0" "0" "$rc"
+case "$out" in
+    *"project: $proj9"*) ok "输出项目根" ;;
+    *) bad "没有输出项目根" ;;
+esac
+case "$out" in
+    *"thread: interactive-status"*) ok "输出交互会话 ID" ;;
+    *) bad "没有输出交互会话 ID" ;;
+esac
+if [ ! -s "$CAPTURE" ]; then
+    ok "没有调用 codex queue"
+else
+    bad "调用了 codex queue"
+fi
+
+# ── 10. --status 无候选 ────────────────────────────────────
+printf '\n[10] --status 无候选\n'
+proj10="$T/proj10"
+mkdir -p "$proj10/.foreman"
+dbdir10="$T/db10"
+mkdir -p "$dbdir10"
+make_db "$dbdir10/state_5.sqlite" "
+INSERT INTO threads VALUES ('exec-status','$proj10','exec','user','codex_exec',0,100,100,100,NULL);
+"
+out="$(run_notify "$proj10" "$dbdir10" "$BIN:$PATH" --status)"; rc=$?
+assert_eq "退出码为 12" "12" "$rc"
+case "$out" in
+    *"没有可用的交互式"*) ok "输出可操作原因" ;;
+    *) bad "错误信息不对" ;;
+esac
+if [ ! -s "$CAPTURE" ]; then
+    ok "没有调用 codex queue"
+else
+    bad "调用了 codex queue"
 fi
 
 printf '\nPASS=%d FAIL=%d\n' "$PASS" "$FAIL"
