@@ -1,15 +1,15 @@
-# REVIEW — T4 为全局和项目模板增加无计划时停工护栏（复审）
+# REVIEW — T5 对齐契约、技能、测量数据和文档链接
 
-> 领导：Codex · 2026-10-17 · 对象：`ab8506c` + 修复 `7aa18df`，STATUS `d2ba9ea`
+> 领导：Codex · 2026-10-17 · 对象：`c1d45db`（实现）、`3f8f994`（STATUS）
 
 ## 结论：PASS
 
-无发现。首轮 P1 已修复。
+无发现。
 
 ## 对照验收标准
 
-- T4/AC1 `[命令]` ✅ 独立运行计划中的 `rg` 命令，`templates/AGENTS.md`、`templates/global-claude.md` 和 `skills/execute-plan/SKILL.md` 三个入口均命中明确的“停止，不要开工”指引。
-- T4/AC2 `[命令]` ✅ 独立运行计划中的 `rg` 命令，三个入口均要求先确认计划存在；技能明确要求文件存在且非空，模板也禁止从需求描述自行开工。
-- T4/AC3 `[命令]` ✅ 独立运行 `git diff --check`，退出码 0；另运行 `git show --check --oneline 7aa18df`，退出码 0。
+- T5/AC1 `[命令]` ✅ 独立运行计划中的 `rg` 命令，无输出，退出码 1。
+- T5/AC2 `[观察]` ✅ 独立运行 `python3 scripts/check-links.py`，输出 `链接检查通过：26 个本地链接/锚点`。
+- T5/AC3 `[观察]` ✅ 独立复核 STATUS 所列行号与内容：角色分配及困难任务处理规则一致；五种状态定义逐项一致；`[现场]` 的工人不得判通过、领导不得判通过及「无法判定」示例一致。
 
-STATUS 中 3 个命令块均已独立重跑。
+STATUS 中 5 条命令均已独立重跑。另运行 `git show --check --oneline c1d45db`，退出码 0。
