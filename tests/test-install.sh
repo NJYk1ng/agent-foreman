@@ -68,8 +68,32 @@ case "$out" in
     *) bad "错误信息没有说明结束标记缺失" ;;
 esac
 
-# ── 2. 同名 skill：默认保留用户版本；--force 先备份 ──────────
-printf '\n[2] 默认安装 / --force 备份\n'
+# ── 2. 标记错序：孤立结束标记在前、开始标记在后 ─────────────
+printf '\n[2] 标记错序\n'
+h="$(mk_home marker-order)"
+{
+    printf 'KEEP-BEFORE\n'
+    printf '<!-- ═══ agent-foreman 结束 ═══ -->\n'
+    printf 'KEEP-AFTER\n'
+    printf '<!-- ═══ agent-foreman 开始 · test ═══ -->\n'
+    printf 'SENTINEL-TAIL\n'
+} > "$h/.claude/CLAUDE.md"
+cp "$h/.claude/CLAUDE.md" "$T/marker-order-before"
+
+out="$(run_install "$h" --uninstall 2>&1)"; rc=$?
+assert_eq "错序标记退出码为 3" "3" "$rc"
+if cmp -s "$T/marker-order-before" "$h/.claude/CLAUDE.md"; then
+    ok "错序标记文件逐字节不变"
+else
+    bad "错序标记文件被修改"
+fi
+case "$out" in
+    *"不成对"*) ok "错误信息说明标记不成对" ;;
+    *) bad "错误信息没有说明标记不成对" ;;
+esac
+
+# ── 3. 同名 skill：默认保留用户版本；--force 先备份 ──────────
+printf '\n[3] 默认安装 / --force 备份\n'
 h="$(mk_home skill-backup)"
 mkdir -p "$h/.claude/skills/agent-contract"
 printf 'USER VERSION\n' > "$h/.claude/skills/agent-contract/SKILL.md"
@@ -97,8 +121,8 @@ else
     bad "没有可恢复的备份（或备份内容不对）"
 fi
 
-# ── 3. 项目 AGENTS.md 冲突：提示可用，不自引用 ──────────────
-printf '\n[3] 项目文件冲突\n'
+# ── 4. 项目 AGENTS.md 冲突：提示可用，不自引用 ──────────────
+printf '\n[4] 项目文件冲突\n'
 h="$(mk_home project)"
 proj="$T/proj"
 mkdir -p "$proj"
@@ -127,8 +151,8 @@ else
     bad "项目 --force 没有可恢复的备份"
 fi
 
-# ── 4. 正常卸载：标记段之外的内容必须保留 ───────────────────
-printf '\n[4] 正常卸载保留外部内容\n'
+# ── 5. 正常卸载：标记段之外的内容必须保留 ───────────────────
+printf '\n[5] 正常卸载保留外部内容\n'
 h="$(mk_home uninstall-normal)"
 printf '# user top\nSENTINEL-TOP\n' > "$h/.claude/CLAUDE.md"
 run_install "$h" >/dev/null 2>&1
@@ -147,8 +171,8 @@ else
     bad "标记段没有被删除"
 fi
 
-# ── 5. 全局文件是符号链接：写真实目标，不破坏链接 ───────────
-printf '\n[5] 符号链接的全局文件\n'
+# ── 6. 全局文件是符号链接：写真实目标，不破坏链接 ───────────
+printf '\n[6] 符号链接的全局文件\n'
 h="$(mk_home symlink)"
 real="$T/real-Claude.md"
 printf '# real rules\nKEEP\n' > "$real"
@@ -170,8 +194,8 @@ else
     bad "卸载破坏了符号链接或用户内容"
 fi
 
-# ── 6. 用户改过的 notify-lead：卸载必须留着 ─────────────────
-printf '\n[6] 用户改过的 notify-lead\n'
+# ── 7. 用户改过的 notify-lead：卸载必须留着 ─────────────────
+printf '\n[7] 用户改过的 notify-lead\n'
 h="$(mk_home notify-lead)"
 run_install "$h" >/dev/null 2>&1
 printf '# user edit\n' >> "$h/.local/bin/notify-lead"
@@ -183,8 +207,8 @@ else
     bad "用户改过的 notify-lead 被删除"
 fi
 
-# ── 7. 语法检查 ─────────────────────────────────────────────
-printf '\n[7] 语法检查\n'
+# ── 8. 语法检查 ─────────────────────────────────────────────
+printf '\n[8] 语法检查\n'
 if bash -n "$REPO/install.sh"; then
     ok "bash -n install.sh"
 else

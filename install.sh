@@ -67,19 +67,35 @@ target_dir() {
     esac
 }
 
-# 标记必须成对出现。只有开始标记、没有结束标记时，任何修改都可能把
-# 用户文件后面的内容当成我们那段删掉 —— 所以这里直接拒绝。
+# 标记必须各恰好一个、且结束在开始之后。只有开始标记、没有结束标记，
+# 或者结束标记出现在开始标记之前，都说明文件被改坏了；这时继续操作会把
+# 用户文件后面的内容当成我们那段删掉 —— 所以直接拒绝。
 check_global_marker_pair() {   # check_global_marker_pair <文件> <说明>
     local f="$1" what="$2"
     [ -e "$f" ] || return 0
-    grep -qF "$AF_BEGIN" "$f" 2>/dev/null || return 0
-    if ! grep -qF "$AF_END" "$f" 2>/dev/null; then
-        printf 'install.sh: %s 里有 agent-foreman 开始标记，但没有结束标记：%s\n' "$what" "$f" >&2
-        printf '            拒绝安装/卸载/修改，文件保持原样。\n' >&2
-        printf '            请从 %s.bak-* 恢复，或手工补上结束标记：%s\n' "$f" "$AF_END" >&2
-        return 1
-    fi
-    return 0
+    python3 - "$f" "$AF_BEGIN" "$AF_END" "$what" <<'PY'
+import sys
+path, begin, end_marker, what = sys.argv[1:5]
+try:
+    lines = open(path, encoding="utf-8").read().split("\n")
+except OSError as e:
+    sys.stderr.write(f"install.sh: 读不了 {what}：{path}（{e}）\n")
+    sys.exit(1)
+starts = [i for i, ln in enumerate(lines) if ln.startswith(begin)]
+ends = [i for i, ln in enumerate(lines) if ln.strip() == end_marker]
+if not starts and not ends:
+    sys.exit(0)
+if len(starts) == 1 and len(ends) == 1 and starts[0] < ends[0]:
+    sys.exit(0)
+sys.stderr.write(
+    f"install.sh: {what} 里的 agent-foreman 标记不成对：{path}\n"
+    f"            开始标记 {len(starts)} 个，结束标记 {len(ends)} 个；"
+    "要求各恰好 1 个，且结束在开始之后。\n"
+    "            拒绝安装/卸载/修改，文件保持原样。\n"
+    f"            请从 {path}.bak-* 恢复，或手工修正标记。\n"
+)
+sys.exit(1)
+PY
 }
 
 installed=0
@@ -175,35 +191,24 @@ put_global() {   # put_global <仓库里的模板> <目标文件> <说明>
     [ -f "$src" ] || { say "⚠️  仓库里没有 $src"; return; }
 
     # 标记不成对时拒绝任何修改（preflight 已检查；这里再兜一层）。
-    if [ -e "$dest" ] && grep -qF "$AF_BEGIN" "$dest" 2>/dev/null && ! grep -qF "$AF_END" "$dest" 2>/dev/null; then
-        say "❌ $what：找到开始标记，但没有结束标记 —— 拒绝修改，文件保持原样。"
-        say "    请从 $dest.bak-* 恢复，或手工补上结束标记：$AF_END"
-        return 1
-    fi
+    check_global_marker_pair "$dest" "$what" || return 1
 
     if [ "$UNINSTALL" = 1 ]; then
         [ -e "$dest" ] || return
         grep -qF "$AF_BEGIN" "$dest" 2>/dev/null || { say "⏭  $what：没有我们那段，没动"; return; }
         if [ "$DRY_RUN" = 1 ]; then say "会从 $what 里删掉 agent-foreman 那段"; return; fi
-        python3 - "$dest" <<'PY'
+        python3 - "$dest" "$AF_BEGIN" "$AF_END" <<'PY'
 import os, sys, tempfile
-p = sys.argv[1]
+p, begin, end_marker = sys.argv[1:4]
 text = open(p, encoding="utf-8").read()
 lines = text.split("\n")
-out, skip = [], False
-start = end = None
-for i, ln in enumerate(lines):
-    if ln.startswith("<!-- ═══ agent-foreman 开始"):
-        start = i
-        skip = True
-    if not skip:
-        out.append(ln)
-    if ln.strip() == "<!-- ═══ agent-foreman 结束 ═══ -->":
-        end = i
-        skip = False
-if start is not None and end is None:
-    sys.stderr.write("install.sh: 找到开始标记但没有结束标记，拒绝修改。\n")
+starts = [i for i, ln in enumerate(lines) if ln.startswith(begin)]
+ends = [i for i, ln in enumerate(lines) if ln.strip() == end_marker]
+if len(starts) != 1 or len(ends) != 1 or starts[0] >= ends[0]:
+    sys.stderr.write("install.sh: agent-foreman 标记不成对，拒绝修改。\n")
     sys.exit(3)
+start, end = starts[0], ends[0]
+out = lines[:start] + lines[end + 1:]
 new_text = "\n".join(out)
 if text.endswith("\n") and not new_text.endswith("\n"):
     new_text += "\n"
@@ -226,28 +231,23 @@ PY
 
     mkdir -p "$(dirname "$dest")"
     [ -e "$dest" ] && cp "$dest" "$dest.bak-$BACKUP_TS"
-    python3 - "$src" "$dest" <<'PY'
+    python3 - "$src" "$dest" "$AF_BEGIN" "$AF_END" <<'PY'
 import os, sys, tempfile
-src, dest = sys.argv[1], sys.argv[2]
+src, dest, begin, end_marker = sys.argv[1:5]
 block = open(src, encoding="utf-8").read().rstrip("\n").split("\n")
 try:
     old = open(dest, encoding="utf-8").read()
 except FileNotFoundError:
     old = ""
 lines = old.split("\n") if old else []
-start = end = None
-for i, ln in enumerate(lines):
-    if ln.startswith("<!-- ═══ agent-foreman 开始"):
-        start = i
-    if start is not None and ln.strip() == "<!-- ═══ agent-foreman 结束 ═══ -->":
-        end = i
-        break
-if start is not None and end is None:
-    sys.stderr.write("install.sh: 找到开始标记但没有结束标记，拒绝修改。\n")
-    sys.exit(3)
-if start is not None and end is not None:          # 已有 → 就地换掉（位置不变）
-    new = lines[:start] + block + lines[end + 1:]
-else:                                              # 没有 → 追加到末尾
+starts = [i for i, ln in enumerate(lines) if ln.startswith(begin)]
+ends = [i for i, ln in enumerate(lines) if ln.strip() == end_marker]
+if starts or ends:
+    if len(starts) != 1 or len(ends) != 1 or starts[0] >= ends[0]:
+        sys.stderr.write("install.sh: agent-foreman 标记不成对，拒绝修改。\n")
+        sys.exit(3)
+    new = lines[:starts[0]] + block + lines[ends[0] + 1:]
+else:
     new = lines + ([""] if lines and lines[-1].strip() else []) + block
 new_text = "\n".join(new)
 if not new_text.endswith("\n"):
