@@ -1,6 +1,6 @@
 # STATUS — 消除 agent-foreman 的协作矛盾并补齐安全与自动检查
 
-> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）、1896a09（T3）、ab8506c（T4）、7aa18df（T4 复审修复）、c1d45db（T5）、702baa3（T6）、4feb6a5（T6 P2 修复）；本 STATUS 随后单独提交
+> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）、1896a09（T3）、ab8506c（T4）、7aa18df（T4 复审修复）、c1d45db（T5）、702baa3（T6）、4feb6a5（T6 P2 修复）、8e9488a（T7）；本 STATUS 随后单独提交
 
 ## T1 统一角色边界、通知流程和执行路径 — 状态：DONE
 
@@ -371,3 +371,65 @@
   验收标准仍由后续 AC 行兜底。
 - **回归**：新增 `[5] 字段值为空`，负向回归 `PASS=5 FAIL=0`。
 - **提交**：`4feb6a5`
+
+---
+
+## T7 整理快速入口、HTML/英文说明和通知状态查看 — 状态：DONE
+
+- **AC1 [命令]**: ✅
+  ```
+  $ rg -n 'TL;DR|快速开始|notify-lead --status|foreman-check' README.md README.en.md docs/what-it-is-for.html
+  README.md:15:## TL;DR
+  README.md:26:4. 自检：`./scripts/foreman-check.sh && bash tests/test-install.sh && bash tests/test-notify-lead.sh`
+  README.md:27:5. 只看会叫醒谁、不发消息：`notify-lead --status`
+  README.md:238:## 快速开始
+  README.en.md:16:## TL;DR
+  README.en.md:27:4. Self-check: `./scripts/foreman-check.sh && bash tests/test-install.sh && bash tests/test-notify-lead.sh`
+  README.en.md:28:5. Inspect the target session without sending: `notify-lead --status`
+  docs/what-it-is-for.html:447:  <span class="sub">快速开始 / TL;DR</span>
+  docs/what-it-is-for.html:460:notify-lead --status
+  docs/what-it-is-for.html:463:./scripts/foreman-check.sh</pre>
+  docs/what-it-is-for.html:464:    <p>完整步骤见 <a href="https://github.com/NJYk1ng/agent-foreman#快速开始">README 的快速开始</a>。</p>
+  ```
+  三个入口都有 TL;DR/快速开始、`notify-lead --status` 和 `foreman-check`。
+
+- **AC2 [命令]**: ✅
+  ```
+  $ bash tests/test-notify-lead.sh
+  [9] --status 只读诊断
+    ✅ 退出码为 0
+    ✅ 输出项目根
+    ✅ 输出交互会话 ID
+    ✅ 没有调用 codex queue
+  [10] --status 无候选
+    ✅ 退出码为 12
+    ✅ 输出可操作原因
+    ✅ 没有调用 codex queue
+  PASS=24 FAIL=0
+  ```
+
+  真实项目（只读，无消息）：
+  ```
+  $ bash scripts/notify-lead.sh --status /home/jgyy/code/agent-foreman
+  project: /home/jgyy/code/agent-foreman
+  thread: 01a14810-e903-73c2-b486-d74084806a01
+  ```
+
+- **AC3 [命令]**: ✅
+  ```
+  $ python3 scripts/check-links.py
+  链接检查通过：26 个本地链接/锚点
+  ```
+
+- **AC4 [命令]**: ✅
+  ```
+  $ git diff --check
+  退出码=0
+  ```
+
+- **改动**：`scripts/notify-lead.sh`、`tests/test-notify-lead.sh`、`README.md`、
+  `README.en.md`、`docs/what-it-is-for.html`
+- **提交**：`8e9488a`
+- **边界核对**：`--status` 只读诊断，不调用 `codex queue`、不创建会话、不改项目文件；
+  测试使用隔离夹具和临时数据库。
+- **备注**：T6 审查 PASS（`b282192`），P2 已修复（`4feb6a5`），本任务在其后执行。
