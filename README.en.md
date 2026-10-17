@@ -11,6 +11,8 @@ Agent skills that turn **Codex** into a tech lead — planning, reviewing, unblo
 [![Harnesses](https://img.shields.io/badge/harnesses-Claude%20Code%20%C2%B7%20Codex-orange.svg)](#requirements)
 [![Status](https://img.shields.io/badge/status-pre--alpha-red.svg)](#status)
 
+> See it in action: <a href="docs/showcase.html">showcase</a> · <a href="docs/what-it-is-for.html">what it is for</a>
+
 ---
 
 ## TL;DR
@@ -121,7 +123,7 @@ agent-foreman is built for a different constraint:
 | **Cost profile** | assumes two premium subscriptions | **one subscription + a cheap endpoint** |
 | **Roles** | interchangeable; either vendor can lead | **fixed and asymmetric**: Codex leads |
 | **Quota policy** | automatic handoff when quota runs out | **explicit budget + a human gate** |
-| **Footprint** | 31 skills, a CLI installer, a companion app | **4 skills, zero dependencies** |
+| **Footprint** | 31 skills, a CLI installer, a companion app | **4 skills, no extra packages / no daemon** |
 | **How hard tasks are handled** | not specified | **split into falsifiable steps; escalate after two attempts** |
 
 If your situation is "I have one subscription I can rely on, and one cheap API" — that is the gap
@@ -145,7 +147,7 @@ exact minimums.
 |---|---|---|
 | **Claude Code** | 2.1.301 | the crew. Needs `SKILL.md` support |
 | **Codex** | 0.163.0 | the lead. **CLI or desktop app** — they share one app-server, and `codex queue` reaches either |
-| **python3** | 3.10 | `notify-lead` reads Codex's session database with it, to find this project's session |
+| **python3** | 3.10 | `install.sh` edits global memory; `notify-lead` reads Codex's session database |
 | **git** | any | `.foreman/` is committed — **it is the audit trail** |
 | **bash** | any | `install.sh` / `notify-lead` |
 
@@ -244,7 +246,7 @@ Doesn't: ❌ write PLAN/REVIEW
 ```
 
 **It does not replace those files — it inserts between a pair of markers**, leaving everything you
-already had **untouched** (backed up first; `--uninstall` restores byte-for-byte). The block opens
+already had **untouched** (backed up first; `--uninstall` removes our block and keeps your other content; a missing final newline is added). The block opens
 with "look for `.foreman/` at the project root; if it is not there, ignore this entirely", so
 **your other projects are unaffected**.
 
@@ -372,6 +374,9 @@ The contract files, in `.foreman/`:
 Full specification: [`docs/contract.md`](docs/contract.md).
 Design rationale and the quota model: [`docs/architecture.md`](docs/architecture.md).
 
+> The detailed contract and design docs are currently Chinese-only:
+> `docs/contract.md`, `docs/architecture.md`.
+
 ---
 
 ## Status
@@ -383,6 +388,9 @@ Design rationale and the quota model: [`docs/architecture.md`](docs/architecture
 - [x] `install.sh` — routes each skill to its side; **writes both global memories (install once, both know who they are)**; `--project` drops the collaboration files into a project
 - [x] **The crew wakes the lead automatically** — `notify-lead.sh` (via `codex queue`) + `AGENTS.md`/`CLAUDE.md` templates
 - [x] ~~The lead wakes the crew~~ — **two routes evaluated, both dropped**: file watching has a silent `cd` bug, the socket needs an internal protocol reversed. **Replaced by "nudge the crew"** — see below
+- [x] `foreman-check` + shell regression (installer / notify-lead / checker) — `./scripts/foreman-check.sh`, `tests/`
+- [x] CI: GitHub Actions runs the same checks — `.github/workflows/ci.yml`
+- [x] `notify-lead --status` — read-only inspection of the session that will be woken
 - [ ] Measured comparison: same tasks, lead-led vs. single-agent, on cost and defect escape rate
 
 ### ⚠️ Why we did not use hooks

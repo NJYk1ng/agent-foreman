@@ -10,6 +10,8 @@
 [![Harnesses](https://img.shields.io/badge/harness-Claude%20Code%20%C2%B7%20Codex-orange.svg)](#环境要求)
 [![Status](https://img.shields.io/badge/status-pre--alpha-red.svg)](#项目状态)
 
+> 看效果：<a href="docs/showcase.html">项目展示</a> · <a href="docs/what-it-is-for.html">它解决什么问题</a>
+
 ---
 
 ## TL;DR
@@ -99,7 +101,7 @@ agent-foreman 针对的是另一种约束：
 | **成本形态** | 假设两边都是付费订阅 | **一个订阅 + 一个便宜端点** |
 | **角色** | 可互换，任一方都能当领导 | **固定且不对称**：Codex 恒为领导 |
 | **额度策略** | 额度耗尽后自动交接 | **显式预算 + 人闸** |
-| **体量** | 31 个 skill + CLI 安装器 + 配套 App | **4 个 skill，零依赖** |
+| **体量** | 31 个 skill + CLI 安装器 + 配套 App | **4 个 skill，无额外包依赖 / 无常驻服务** |
 | **难任务怎么处理** | 未规定 | **必须拆成可证伪的小任务；卡住两次升级给人** |
 
 如果你的处境是「**我只有一个能放心依赖的订阅，另有一个便宜 API**」—— 那就是它填的缺口。
@@ -119,7 +121,7 @@ agent-foreman 针对的是另一种约束：
 |---|---|---|
 | **Claude Code** | 2.1.301 | 工人。要能读 `SKILL.md` |
 | **Codex** | 0.163.0 | 领导。**CLI 或桌面版都行** —— 两者共用同一个 app-server，`codex queue` 两边都叫得醒 |
-| **python3** | 3.10 | `notify-lead` 用它读 Codex 的会话库，找本项目最近的会话 |
+| **python3** | 3.10 | `install.sh` 改全局记忆；`notify-lead` 读 Codex 的会话库 |
 | **git** | 任意 | `.foreman/` 要提交 —— **它就是审计线索** |
 | **bash** | 任意 | `install.sh` / `notify-lead` |
 
@@ -204,7 +206,7 @@ cd agent-foreman
 ```
 
 **它不是替换，是夹在一对标记之间插进去** —— 那两个文件里你原有的内容**一个字不动**
-（改前自动备份，`--uninstall` 逐字节还原）。段首写着「先看项目根有没有 `.foreman/`，
+（改前自动备份；`--uninstall` 删掉我们那段，保留其他内容；原文件末尾没有换行时会补一个）。段首写着「先看项目根有没有 `.foreman/`，
 没有就完全忽略这一段」，所以**不影响你其他项目**。
 
 > 📌 **这一层才是重点。** skill 是「被叫到才触发」的，项目级 `AGENTS.md` 是「每个项目都得放一份」的 ——
@@ -342,6 +344,9 @@ Codex 就醒了 —— 不需要你走过去、打一段提示词。
 - [x] `install.sh` —— 分发 skill；**写两边全局记忆（装一次就知道自己是谁）**；`--project` 把协作文件放进项目
 - [x] **工人干完自动叫醒领导** —— `notify-lead.sh`（走 `codex queue`）+ `AGENTS.md`/`CLAUDE.md` 模板
 - [x] ~~领导审完自动叫醒工人~~ —— **评估过两条路，都不做**：文件监听有 `cd` 静默失效 bug，套接字要逆向内部协议。**改成「回工人那边敲一下」**，理由见下
+- [x] `foreman-check` + shell 回归（安装器 / notify-lead / checker）—— `./scripts/foreman-check.sh`、`tests/`
+- [x] CI：GitHub Actions 跑同一组检查 —— `.github/workflows/ci.yml`
+- [x] `notify-lead --status` —— 只读查看会叫醒哪个 Codex 会话
 - [ ] 对照测量：同一批任务，领导制 vs 单 agent，比成本与缺陷漏出率
 
 ### ⚠️ 为什么最后没走钩子
