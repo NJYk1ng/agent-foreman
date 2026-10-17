@@ -1,6 +1,6 @@
 # STATUS — 消除 agent-foreman 的协作矛盾并补齐安全与自动检查
 
-> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）、1896a09（T3）、ab8506c（T4）、7aa18df（T4 复审修复）、c1d45db（T5）、702baa3（T6）；本 STATUS 随后单独提交
+> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）、1896a09（T3）、ab8506c（T4）、7aa18df（T4 复审修复）、c1d45db（T5）、702baa3（T6）、4feb6a5（T6 P2 修复）；本 STATUS 随后单独提交
 
 ## T1 统一角色边界、通知流程和执行路径 — 状态：DONE
 
@@ -323,7 +323,8 @@
   [2] 计划缺字段 ✅ 缺字段被拒绝并指出「边界」
   [3] 模板缺停工护栏 ✅ 缺护栏被拒绝并指出 AGENTS.md
   [4] 脚本语法错误 ✅ 语法错误被拒绝并指出 install.sh
-  PASS=4 FAIL=0
+  [5] 字段值为空 ✅ 空字段值被拒绝并指出「边界」
+  PASS=5 FAIL=0
   ```
 
 - **AC2 [命令]**: ✅
@@ -357,7 +358,16 @@
 
 - **改动**：新增 `scripts/foreman-check.sh`、`tests/test-foreman-check.sh`、
   `.github/workflows/ci.yml`；复用 T2/T3 的回归脚本。
-- **提交**：`702baa3`
+- **提交**：`702baa3`（首轮）、`4feb6a5`（P2 修复）
 - **边界核对**：只使用 Bash/Python 标准库和仓库现有依赖；测试全部在临时 HOME /
   临时数据库里跑，不读写真实用户 HOME、Codex 会话库或系统级安装目录。
-- **备注**：T5 审查 PASS（`d3d9de6`），本任务在其后执行。
+- **备注**：T5 审查 PASS（`d3d9de6`），本任务在其后执行。复审 PASS，
+  另有一条 P2 已修复（见下）。
+
+### P2 修复 — 状态：DONE
+
+- **发现**：`foreman-check` 只确认字段标签存在；把 `- **边界**：` 的值清空后仍会通过。
+- **修复**：目标 / 谁写 / 依赖 / 边界 要求冒号后非空（允许显式写「无」）；
+  验收标准仍由后续 AC 行兜底。
+- **回归**：新增 `[5] 字段值为空`，负向回归 `PASS=5 FAIL=0`。
+- **提交**：`4feb6a5`
