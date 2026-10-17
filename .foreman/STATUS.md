@@ -2,7 +2,7 @@
 
 > 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：ff0f47c（T11）、981ba4f（T12）、c9c17ec（T12 P2 修复）；本 STATUS 随后单独提交
 
-## T11 固定 CI runner 与 checkout 运行时 — 状态：UNVERIFIED
+## T11 固定 CI runner 与 checkout 运行时 — 状态：DONE
 
 - **AC1 [命令]**: ✅
   ```
@@ -37,17 +37,19 @@
   退出码=0
   ```
 
-- **AC5 [现场]**: ⏳ 待现场验证 —— 容器里没有 GitHub Actions 环境。
-  - 复现步骤：
-    1. `git push origin master`
-    2. 打开 https://github.com/NJYk1ng/agent-foreman/actions，找到 T11 提交对应的 run
-    3. 查看 `test` job 的所有步骤是否全绿；annotations 中是否还有 Node.js 20 弃用
-  - 判据：所有步骤绿，且没有 Node.js 20 annotation = 通过。
+- **AC5 [现场]**: ✅ 需求方已验（2026-10-17）—— GitHub Actions run
+  https://github.com/NJYk1ng/agent-foreman/actions/runs/39011559456
+  - head：`c55ef98`（包含 T11 的 `ff0f47c`）
+  - job `test`：所有步骤 success
+  - runner labels：`["ubuntu-24.04"]`
+  - `annotations_count`：0（Node.js 20 警告已消失）
+  - 回归日志：`foreman-check: 通过`、`PASS=33`、`PASS=24`、`PASS=7`、
+    `链接检查通过：26 个本地链接/锚点`
 
 - **改动**：`.github/workflows/ci.yml`
 - **提交**：`ff0f47c`
-- **边界核对**：未改现有 CI 命令/测试；未执行 push。
-- **备注**：T11 的 AC5 是现场项，工人不判通过；状态因此是 `UNVERIFIED`，不是 `DONE`。
+- **边界核对**：实现只改 `.github/workflows/ci.yml`；push 由需求方授权后执行，用于 AC5 现场验证。
+- **备注**：AC5 由需求方于 2026-10-17 判通过；T11 收口为 `DONE`。
 
 ---
 
