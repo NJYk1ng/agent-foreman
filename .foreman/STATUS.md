@@ -1,6 +1,6 @@
 # STATUS — 消除 agent-foreman 的协作矛盾并补齐安全与自动检查
 
-> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）；本 STATUS 随后单独提交
+> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）、1896a09（T3）；本 STATUS 随后单独提交
 
 ## T1 统一角色边界、通知流程和执行路径 — 状态：DONE
 
@@ -139,3 +139,69 @@
   ```
 - **回归**：新增 `[2] 标记错序`；完整套件 `PASS=26 FAIL=0`。
 - **提交**：`de23aad`
+
+---
+
+## T3 让 notify-lead 明确选择正确的交互会话 — 状态：DONE
+
+- **AC1 [命令]**: ✅
+  ```
+  $ bash tests/test-notify-lead.sh
+  [1] 默认只选交互式会话
+    ✅ 退出码为 0
+    ✅ 选中交互式会话
+    ✅ 跳过 subagent
+    ✅ 跳过 codex_exec
+  ```
+  夹具里同时放了更新的 `subagent`、`codex_exec` 和较旧的交互会话；默认仍只选交互会话。
+
+  真实库只读验证（fake `codex` 捕获参数，没有向真实会话发消息）：
+  ```
+  $ CAPTURE=... PATH=fake-bin:$PATH bash scripts/notify-lead.sh "真实库选择测试"
+  notify-lead: 正在推给会话 01a14810-e903-73c2-b486-d74084806a01
+  exit=0
+  captured: queue --thread 01a14810-e903-73c2-b486-d74084806a01 --message 真实库选择测试
+  ```
+  库里更新的 `01a1481a-...`（Guardian review subagent）被跳过，选中的是主交互会话。
+
+- **AC2 [命令]**: ✅
+  ```
+  [2] --thread 显式选会话
+    ✅ 退出码为 0
+    ✅ 使用显式会话
+  [3] 符号链接项目路径
+    ✅ 退出码为 0
+    ✅ symlink 路径按真实路径匹配
+  [4] 没有交互式会话
+    ✅ 退出码为 12
+    ✅ 错误信息说明没有交互式会话
+  ```
+
+- **AC3 [命令]**: ✅
+  ```
+  [5] schema 不兼容
+    ✅ 退出码为 11
+    ✅ 错误信息说明 schema 不一致
+  [6] 会话库缺失
+    ✅ 退出码为 10
+    ✅ 错误信息说明会话库缺失
+  [7] python3 缺失
+    ✅ 退出码为 5
+    ✅ 错误信息说明需要 python3
+  ```
+
+- **AC4 [命令]**: ✅
+  ```
+  [8] 语法检查
+    ✅ bash -n notify-lead.sh
+  ```
+
+- **汇总**：`PASS=17 FAIL=0`（`bash tests/test-notify-lead.sh` 退出码 0）；
+  `bash tests/test-install.sh` 仍为 `PASS=26 FAIL=0`。
+- **改动**：`scripts/notify-lead.sh`、新增 `tests/test-notify-lead.sh`
+- **提交**：`1896a09`
+- **边界核对**：
+  - 默认路径只选交互式会话（AC1），不会向 `codex_exec` / subagent 发消息。
+  - 未指定 `--thread` 时只匹配项目根（realpath），不跨项目（AC2/AC3 夹具）。
+  - 数据库只读访问：`sqlite3.connect(..., mode=ro, uri=True)`。
+- **备注**：T2 复审 PASS（`d6d6804`），本任务在其后执行。
