@@ -1,6 +1,6 @@
 # STATUS — 消除 agent-foreman 的协作矛盾并补齐安全与自动检查
 
-> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）、1896a09（T3）、ab8506c（T4）；本 STATUS 随后单独提交
+> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）、1896a09（T3）、ab8506c（T4）、7aa18df（T4 复审修复）；本 STATUS 随后单独提交
 
 ## T1 统一角色边界、通知流程和执行路径 — 状态：DONE
 
@@ -212,18 +212,21 @@
 
 - **AC1 [命令]**: ✅
   ```
-  $ rg -n '没有 .foreman/PLAN.md.*停止|没有计划.*停止.*实现' templates/AGENTS.md templates/global-claude.md
+  $ rg -n '没有 .foreman/PLAN.md.*停止|没有计划.*停止.*实现' templates/AGENTS.md templates/global-claude.md skills/execute-plan/SKILL.md
   templates/global-claude.md:12:**没有 .foreman/PLAN.md → 停止，不要开工。** 报告人："这里没有计划，需要领导先写 PLAN"。
+  skills/execute-plan/SKILL.md:19:> **没有 .foreman/PLAN.md → 停止，不要开工。** 报告人："这里没有计划，需要领导先写 PLAN"。
   templates/AGENTS.md:51:**没有 .foreman/PLAN.md → 停止，不要开工。** 报告人："这里没有计划，需要领导先写 PLAN"。
   ```
 
 - **AC2 [命令]**: ✅
   ```
-  $ rg -n 'PLAN.md.*不存在|没有 .foreman/PLAN.md' templates/AGENTS.md templates/global-claude.md
-  templates/global-claude.md:12:**没有 .foreman/PLAN.md → 停止，不要开工。** 报告人："这里没有计划，需要领导先写 PLAN"。
-  templates/global-claude.md:13:先确认 `.foreman/PLAN.md` 存在且非空；**PLAN.md 不存在时，不得从需求描述自行开工**。
+  $ rg -n 'PLAN.md.*不存在|没有 .foreman/PLAN.md' templates/AGENTS.md templates/global-claude.md skills/execute-plan/SKILL.md
   templates/AGENTS.md:51:**没有 .foreman/PLAN.md → 停止，不要开工。** 报告人："这里没有计划，需要领导先写 PLAN"。
   templates/AGENTS.md:52:先确认 `.foreman/PLAN.md` 存在且非空；**PLAN.md 不存在时，不得从需求描述自行开工**。
+  templates/global-claude.md:12:**没有 .foreman/PLAN.md → 停止，不要开工。** 报告人："这里没有计划，需要领导先写 PLAN"。
+  templates/global-claude.md:13:先确认 `.foreman/PLAN.md` 存在且非空；**PLAN.md 不存在时，不得从需求描述自行开工**。
+  skills/execute-plan/SKILL.md:19:> **没有 .foreman/PLAN.md → 停止，不要开工。** 报告人："这里没有计划，需要领导先写 PLAN"。
+  skills/execute-plan/SKILL.md:20:> **PLAN.md 不存在时，不得从需求描述自行开工。**
   ```
 
 - **AC3 [命令]**: ✅
@@ -232,7 +235,16 @@
   退出码=0
   ```
 
-- **改动**：`templates/global-claude.md`、`templates/AGENTS.md`
-- **提交**：`ab8506c`
+- **改动**：`templates/global-claude.md`、`templates/AGENTS.md`、`skills/execute-plan/SKILL.md`
+- **提交**：`ab8506c`（首轮）、`7aa18df`（复审修复）
 - **边界核对**：未改 Codex 领导收到需求后生成计划的入口规则；未删除 `.foreman/archive/`。
-- **备注**：T3 审查 PASS（`57f33ea`），本任务在其后执行。
+- **备注**：首轮审查 BLOCK（P1 第三个工人入口缺失），已修复并补齐三条命中，等待复审。
+  T3 审查 PASS（`57f33ea`），本任务在其后执行。
+
+### 复审修复（P1）— 状态：DONE
+
+- **发现**：PLAN 的 T4/AC1/AC2 把 `skills/execute-plan/SKILL.md` 列为第三个工人入口；
+  首轮只改了两个模板。
+- **修复**：在 `execute-plan` 开工前增加“PLAN.md 不存在/为空 → 停止并报告人”。
+- **复核**：上面的 AC1/AC2 命令现在三个入口都有命中；`git diff --check` 退出码 0。
+- **提交**：`7aa18df`
