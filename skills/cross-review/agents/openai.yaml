@@ -2,6 +2,6 @@ interface:
   display_name: "Cross Review"
   short_description: "审核工人的产出并对照验收标准"
 policy:
-  # ⭐ 审核是最花钱的一步（实测一次调用底价 ≈7.3k token，再加 diff）。
+  # ⭐ 审核是最花钱的一步（实测一次完整 review ≈49,000 token，再加 diff）。
   # 必须显式触发，不许它自动跑起来。
   allow_implicit_invocation: false

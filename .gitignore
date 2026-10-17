@@ -13,3 +13,7 @@ settings.local.json
 .idea/
 .vscode/
 *.swp
+
+# Python cache (scripts/check-links.py)
+__pycache__/
+*.pyc
