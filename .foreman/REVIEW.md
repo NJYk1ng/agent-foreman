@@ -1,18 +1,15 @@
-# REVIEW — T3 让 notify-lead 明确选择正确的交互会话
+# REVIEW — T4 为全局和项目模板增加无计划时停工护栏（复审）
 
-> 领导：Codex · 2026-10-17 · 对象：`1896a09`（实现）、`4cbfbac`（STATUS）
+> 领导：Codex · 2026-10-17 · 对象：`ab8506c` + 修复 `7aa18df`，STATUS `d2ba9ea`
 
 ## 结论：PASS
 
-无发现。
+无发现。首轮 P1 已修复。
 
 ## 对照验收标准
 
-- T3/AC1 `[命令]` ✅ 独立运行 `bash tests/test-notify-lead.sh`，`PASS=17 FAIL=0`。较新的 subagent 与 `codex_exec` 均被跳过，只选中夹具中的交互会话。
-- T3/AC2 `[命令]` ✅ 同一套件通过 `--thread` 显式指定和 symlink 项目路径按 realpath 匹配；无交互会话时返回 12，并给出可操作错误信息。
-- T3/AC3 `[命令]` ✅ 同一套件通过 schema 不兼容（退出 11）、会话库缺失（退出 10）和 `python3` 缺失（退出 5）的退出码与错误信息检查。
-- T3/AC4 `[命令]` ✅ 独立运行 `bash -n scripts/notify-lead.sh`，退出码 0。
-- 回归保护 ✅ 独立运行 `bash tests/test-install.sh`，`PASS=26 FAIL=0`。
-- 真实库只读验证 ✅ 用真实默认 Codex 会话库运行选择逻辑，`sqlite3` 以 `mode=ro` 打开；PATH 中以临时假 `codex` 替代真实命令。捕获到选择主交互会话 `01a14810-e903-73c2-b486-d74084806a01`，未选择更新的 Guardian subagent，也未调用真实 `codex queue`。
+- T4/AC1 `[命令]` ✅ 独立运行计划中的 `rg` 命令，`templates/AGENTS.md`、`templates/global-claude.md` 和 `skills/execute-plan/SKILL.md` 三个入口均命中明确的“停止，不要开工”指引。
+- T4/AC2 `[命令]` ✅ 独立运行计划中的 `rg` 命令，三个入口均要求先确认计划存在；技能明确要求文件存在且非空，模板也禁止从需求描述自行开工。
+- T4/AC3 `[命令]` ✅ 独立运行 `git diff --check`，退出码 0；另运行 `git show --check --oneline 7aa18df`，退出码 0。
 
-STATUS 中 5 个命令/输出证据块均已独立复核。另运行 `git show --check --oneline 1896a09`，退出码 0。
+STATUS 中 3 个命令块均已独立重跑。
