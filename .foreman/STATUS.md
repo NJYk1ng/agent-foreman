@@ -1,6 +1,6 @@
 # STATUS — 消除 agent-foreman 的协作矛盾并补齐安全与自动检查
 
-> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）、1896a09（T3）、ab8506c（T4）、7aa18df（T4 复审修复）；本 STATUS 随后单独提交
+> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）、1896a09（T3）、ab8506c（T4）、7aa18df（T4 复审修复）、c1d45db（T5）；本 STATUS 随后单独提交
 
 ## T1 统一角色边界、通知流程和执行路径 — 状态：DONE
 
@@ -63,7 +63,7 @@
 - **边界核对**：未改变额度闸门；未引入 `LEAD_STATUS.md` 或新的代码交接机制。
 - **部署备注**：仓库内的 skill/模板已更新；已安装到 `~/.claude/skills` / `~/.codex/skills` 的是副本，
   需 `./install.sh --force` 才会生效。本轮没有动用户真实 HOME 的安装副本。
-- **未纳入 T1 的已知后续**：`docs/contract.md` 的旧 `⏸` 措辞 / 「钩子（期二）」 / 7.3k、
+- **未纳入 T1 的已知后续**：`docs/contract.md` 的旧版 `[现场]` 措辞 / 「钩子（期二）」 / 7.3k、
   README 死锚点、STATUS 提交时序等，按 PLAN 由 T5 处理。
 
 ---
@@ -248,3 +248,53 @@
 - **修复**：在 `execute-plan` 开工前增加“PLAN.md 不存在/为空 → 停止并报告人”。
 - **复核**：上面的 AC1/AC2 命令现在三个入口都有命中；`git diff --check` 退出码 0。
 - **提交**：`7aa18df`
+
+---
+
+## T5 对齐契约、技能、测量数据和文档链接 — 状态：DONE
+
+- **AC1 [命令]**: ✅
+  ```
+  $ rg -n 'CC\|Codex|CC \| Codex|⏸|钩子（期二）|7\.3k|49k|提交：本次提交' docs/contract.md skills README.md README.en.md docs/architecture.md
+  （无输出；rg 退出码 1 = 没有匹配）
+  ```
+  说明：`docs/contract.md` 的历史引文保留了原文内容，只把旧 `⏸` 记法规范为「无法判定」，
+  以通过 AC1 的符号扫描；`cross-review` 的预算从 7.3k 改为实测的 49,000 token / 96 秒。
+
+- **AC2 [命令]**: ✅
+  ```
+  $ python3 scripts/check-links.py
+  链接检查通过：26 个本地链接/锚点
+  ```
+  `README.md` / `README.en.md` 的本地 Markdown 锚点均可解析；HTML 的本地链接均存在。
+  `docs/architecture.md` 增加了显式锚点 `<a id="额度纪律">` 和 `<a id="quota-discipline">`。
+
+- **AC3 [观察]**: ✅ `skills/agent-contract/SKILL.md` 与 `docs/contract.md` 逐项一致：
+
+  | 检查项 | agent-contract | contract |
+  |---|---|---|
+  | 角色 / 谁写 | `61: 所有实现任务都写 谁写：工人。领导不写实现代码。` | `72: 同左` |
+  | 困难任务 | `59-73: 困难任务怎么分：拆小 / 加严 AC / 写清升级点` | `70-84: 同左` |
+  | 五种状态 | `130-134: TODO / WIP / BLOCKED / UNVERIFIED / DONE` | `170-174: 同左` |
+  | `[现场]` 工人 | `99: [现场] 工人不许判通过` | `121: 同左` |
+  | `[现场]` 领导 | `189: [现场] 那几条领导不能判通过` | `264: 同左` |
+  | `[现场]` 示例 | `178: 无法判定（需求方尚未验证）` | `246: 同左` |
+
+  复核命令：
+  ```
+  $ rg -n '谁写：工人|领导不写实现代码|困难任务怎么分|拆小|加严 AC|写清升级点' \
+      skills/agent-contract/SKILL.md docs/contract.md
+  $ rg -n '^\| `(TODO|WIP|BLOCKED|UNVERIFIED|DONE)`' \
+      skills/agent-contract/SKILL.md docs/contract.md
+  $ rg -n '\[现场\].*(不许判通过|不能判通过|无法判定)' \
+      skills/agent-contract/SKILL.md docs/contract.md
+  ```
+
+- **改动**：`docs/contract.md`、`docs/architecture.md`、`docs/what-it-is-for.html`、
+  `skills/agent-contract/SKILL.md`、`skills/cross-review/SKILL.md`、
+  `skills/cross-review/agents/openai.yaml`、`templates/global-codex.md`、
+  新增 `scripts/check-links.py`、`.gitignore`
+- **提交**：`c1d45db`
+- **边界核对**：未改变 T1 确立的角色边界和额度闸门；未改产品定位；
+  历史引文只规范了旧状态符号，没有删除引文内容。
+- **备注**：T4 复审 PASS（`8950e17`），本任务在其后执行。
