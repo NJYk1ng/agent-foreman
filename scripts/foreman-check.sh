@@ -46,10 +46,13 @@ err() { printf '❌ %s\n' "$*" >&2; fail=1; }
 ok()  { printf '✅ %s\n' "$*"; }
 
 PLAN="$ROOT/.foreman/PLAN.md"
-if [ ! -s "$PLAN" ]; then
-    err "缺少或空的计划：$PLAN"
-else
+if [ -s "$PLAN" ]; then
     ok "计划存在且非空：$PLAN"
+elif [ -d "$ROOT/.foreman/archive" ] && [ -n "$(find "$ROOT/.foreman/archive" -type f -print -quit 2>/dev/null)" ]; then
+    # 计划已完成并归档：没有活跃计划不是错误，CI 仍需能跑模板/脚本检查。
+    ok "没有活跃计划（已归档）；跳过计划检查"
+else
+    err "缺少或空的计划：$PLAN"
 fi
 
 # 计划结构：每个任务必须有五个字段、至少一条 AC、编号唯一。

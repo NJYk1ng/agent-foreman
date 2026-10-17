@@ -22,7 +22,26 @@ ROOT="$T/root"
 copy_fixture() {
     rm -rf "$ROOT"
     mkdir -p "$ROOT/.foreman" "$ROOT/templates" "$ROOT/skills/execute-plan" "$ROOT/scripts"
-    cp "$REPO/.foreman/PLAN.md" "$ROOT/.foreman/"
+    local plan="$REPO/.foreman/PLAN.md"
+    if [ ! -f "$plan" ]; then
+        plan="$(ls -t "$REPO"/.foreman/archive/*/PLAN.md 2>/dev/null | head -n1)"
+    fi
+    if [ -n "${plan:-}" ] && [ -f "$plan" ]; then
+        cp "$plan" "$ROOT/.foreman/PLAN.md"
+    else
+        cat > "$ROOT/.foreman/PLAN.md" <<'PLAN'
+# PLAN — test fixture
+
+### T1 test
+
+- **目标**：test
+- **谁写**：工人
+- **依赖**：无
+- **验收标准**：
+  - AC1 [命令] `true` → 0
+- **边界**：无
+PLAN
+    fi
     cp "$REPO/templates/AGENTS.md" "$REPO/templates/global-claude.md" "$ROOT/templates/"
     cp "$REPO/skills/execute-plan/SKILL.md" "$ROOT/skills/execute-plan/"
     cp "$REPO/install.sh" "$ROOT/"
@@ -124,6 +143,32 @@ if [ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q '边界'; then
     ok "空字段值被拒绝并指出「边界」"
 else
     bad "空字段值没有被正确报告（exit=$rc）"
+    printf '%s\n' "$out" | sed 's/^/    /'
+fi
+
+# ── 6. 已归档、无活跃计划 ───────────────────────────────────
+printf '\n[6] 已归档、无活跃计划\n'
+copy_fixture
+rm -f "$ROOT/.foreman/PLAN.md"
+mkdir -p "$ROOT/.foreman/archive/2026-10-17-test"
+printf '# archived\n' > "$ROOT/.foreman/archive/2026-10-17-test/PLAN.md"
+out="$(run_check)"; rc=$?
+if [ "$rc" -eq 0 ] && printf '%s' "$out" | grep -q '没有活跃计划'; then
+    ok "已归档时跳过计划检查"
+else
+    bad "已归档时没有正确跳过（exit=$rc）"
+    printf '%s\n' "$out" | sed 's/^/    /'
+fi
+
+# ── 7. 无活跃计划且无归档 ───────────────────────────────────
+printf '\n[7] 无活跃计划且无归档\n'
+copy_fixture
+rm -f "$ROOT/.foreman/PLAN.md"
+out="$(run_check)"; rc=$?
+if [ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q '缺少或空的计划'; then
+    ok "无计划且无归档时被拒绝"
+else
+    bad "无计划且无归档时没有被拒绝（exit=$rc）"
     printf '%s\n' "$out" | sed 's/^/    /'
 fi
 
