@@ -1,6 +1,6 @@
 # STATUS — 消除 agent-foreman 的协作矛盾并补齐安全与自动检查
 
-> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）、1896a09（T3）、ab8506c（T4）、7aa18df（T4 复审修复）、c1d45db（T5）；本 STATUS 随后单独提交
+> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）、1896a09（T3）、ab8506c（T4）、7aa18df（T4 复审修复）、c1d45db（T5）、702baa3（T6）；本 STATUS 随后单独提交
 
 ## T1 统一角色边界、通知流程和执行路径 — 状态：DONE
 
@@ -298,3 +298,66 @@
 - **边界核对**：未改变 T1 确立的角色边界和额度闸门；未改产品定位；
   历史引文只规范了旧状态符号，没有删除引文内容。
 - **备注**：T4 复审 PASS（`8950e17`），本任务在其后执行。
+
+---
+
+## T6 增加 foreman check、shell 回归测试和 CI — 状态：DONE
+
+- **AC1 [命令]**: ✅
+  ```
+  $ ./scripts/foreman-check.sh
+  ✅ 计划存在且非空：/home/jgyy/code/agent-foreman/.foreman/PLAN.md
+  ✅ 停工护栏：templates/AGENTS.md
+  ✅ 停工护栏：templates/global-claude.md
+  ✅ 停工护栏：skills/execute-plan/SKILL.md
+  ✅ 语法：install.sh
+  ✅ 语法：scripts/notify-lead.sh
+  ✅ 语法：scripts/foreman-check.sh
+  ✅ 语法：scripts/check-links.py
+  foreman-check: 通过
+  ```
+
+  负向用例（`tests/test-foreman-check.sh`）：
+  ```
+  [1] 合法夹具 ✅
+  [2] 计划缺字段 ✅ 缺字段被拒绝并指出「边界」
+  [3] 模板缺停工护栏 ✅ 缺护栏被拒绝并指出 AGENTS.md
+  [4] 脚本语法错误 ✅ 语法错误被拒绝并指出 install.sh
+  PASS=4 FAIL=0
+  ```
+
+- **AC2 [命令]**: ✅
+  ```
+  $ bash tests/test-install.sh
+  ...
+  PASS=26 FAIL=0
+  ```
+  覆盖缺结束标记/标记错序、默认安装保留用户 skill、`--force` 备份、
+  正常卸载保留外部内容、符号链接、用户改过的 `notify-lead`、语法检查；
+  临时 HOME 通过 `trap` 清理。
+
+- **AC3 [命令]**: ✅
+  ```
+  $ bash tests/test-notify-lead.sh
+  ...
+  PASS=17 FAIL=0
+  ```
+  覆盖交互式会话选择、`--thread`、symlink、无会话、schema、库缺失、python3 缺失、语法检查。
+
+- **AC4 [命令]**: ✅
+  ```
+  $ ./scripts/foreman-check.sh && bash tests/test-install.sh && bash tests/test-notify-lead.sh
+  foreman-check: 通过
+  PASS=26 FAIL=0
+  PASS=17 FAIL=0
+  AC4_exit=0
+  ```
+  CI 工作流 `.github/workflows/ci.yml` 执行同一组三条命令，并额外运行
+  `bash tests/test-foreman-check.sh`；任一失败即标红。
+
+- **改动**：新增 `scripts/foreman-check.sh`、`tests/test-foreman-check.sh`、
+  `.github/workflows/ci.yml`；复用 T2/T3 的回归脚本。
+- **提交**：`702baa3`
+- **边界核对**：只使用 Bash/Python 标准库和仓库现有依赖；测试全部在临时 HOME /
+  临时数据库里跑，不读写真实用户 HOME、Codex 会话库或系统级安装目录。
+- **备注**：T5 审查 PASS（`d3d9de6`），本任务在其后执行。
