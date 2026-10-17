@@ -1,6 +1,6 @@
 # STATUS — 固定 CI 环境并准备对照测量
 
-> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：ff0f47c（T11）、981ba4f（T12）；本 STATUS 随后单独提交
+> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：ff0f47c（T11）、981ba4f（T12）、c9c17ec（T12 P2 修复）；本 STATUS 随后单独提交
 
 ## T11 固定 CI runner 与 checkout 运行时 — 状态：UNVERIFIED
 
@@ -119,3 +119,17 @@
 - **边界核对**：未运行真实 Codex/Claude 会话或 API；未采集真实订阅用量；
   未写 pilot 结果/成本优势/缺陷率结论；README 的 `[ ] 对照测量` 保持未勾选。
 - **备注**：T11 审查 PASS（`c1ee32f`），AC5 仍待现场；T12 无依赖。
+
+### T12 P2 修复 — 状态：DONE
+
+- **隐藏测试副本**：新增 `metadata.visible_files`；校验器要求 workspace 文件集合与清单完全一致。
+  负向演示（临时副本中把 `grader/test_sum.sh` 复制成 `workspace/leaked-test.sh`，
+  并同步快照哈希）：
+  ```
+  ❌ sum-cli: workspace files do not match visible_files (actual=['leaked-test.sh', 'sum.sh'], expected=['sum.sh'])
+  fixtures: FAILED
+  ```
+- **token cache 归一化**：协议 4.1 明确 cache 是 input 的细分、不重复加；
+  有 canonical total 用它，否则 `input + output`；跨 provider 用同一归一化定义。
+- **回归**：`python3 benchmarks/check_fixtures.py` → `fixtures: 3 tasks OK`。
+- **提交**：`c9c17ec`
