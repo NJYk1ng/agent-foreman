@@ -1,7 +1,10 @@
 # 对照测量协议
 
-> 状态：协议与夹具已建立，**尚未运行 pilot**。
-> 本协议不产生“哪种方法更好”的结论；任何 pilot 必须由人另行批准预算并另立计划。
+> 状态：协议与夹具已建立；2026-10-17 完成 **1 task × 2 methods 的 dry run**（2 runs），
+> 记录见 [归档 PLAN](../.foreman/archive/2026-10-17-benchmark-pilot/PLAN.md) 与
+> [归档 STATUS](../.foreman/archive/2026-10-17-benchmark-pilot/STATUS.md)。
+> 本次 dry run **没有方法效果结论**；README 的 `[ ] 对照测量` 仍未勾选。
+> 任何正式 pilot 必须由人另行批准预算并另立计划。
 
 ## 一、目的
 
