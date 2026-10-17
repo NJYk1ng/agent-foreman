@@ -16,3 +16,4 @@ jobs:
           bash tests/test-install.sh
           bash tests/test-notify-lead.sh
           bash tests/test-foreman-check.sh
+          python3 scripts/check-links.py
