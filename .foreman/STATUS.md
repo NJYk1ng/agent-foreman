@@ -1,15 +1,12 @@
 # STATUS — Benchmark pilot dry run
 
-> 工人：Claude Code (deepseek-flash[1m]) · 2026-10-17 · 提交：`5f8700c` + 待提交的 `.foreman/PLAN.md`、`.foreman/STATUS.md`
+> 工人：Claude Code (deepseek-flash[1m]) · 2026-10-17 · 提交：`71969db`（AC1 确认后更新本文件）
 
-## T13 单任务双方法 benchmark dry run — 状态：UNVERIFIED
+## T13 单任务双方法 benchmark dry run — 状态：DONE
 
-- **AC1 [现场]**: ⏳ 待现场验证 —— 开工门槛由需求方在对话中授权（原话「你来定就行」），领导已把值写进 PLAN；但 AC1 属于 `[现场]`，按契约工人不能判 ✅。
-  - 谁：需求方
-  - 在哪：本对话
-  - 做什么：确认五项——任务 `sum-cli`；范围仅 2 runs；token 上限 500,000；金额上限 0 额外按量支出（CNY）；耗时上限 60 分钟
-  - 什么算通过：明确回复「AC1 通过」；若任一项要改，回复新值，T13 重新排队
-  - 附注：Claude CLI 的 `total_cost_usd` 合计报告 **$1.214867**（两个 Claude 会话，`costBasis=unknown`）。这是 CLI 的 notional 估算，无法从日志证明是订阅内额度还是按量计费；金额闸门也需要你确认。
+- **AC1 [现场]**: ✅ 需求方于 2026-10-17 在本对话明确回复「AC1 通过」。
+  - 确认内容：任务 `sum-cli`；范围仅 2 runs；token 上限 500,000；金额上限 0 额外按量支出（CNY）；耗时上限 60 分钟。
+  - 金额说明：需求方在知悉 Claude CLI 报告的 notional `$1.214867`（两个会话，`costBasis=unknown`）后确认 AC1；该数字不是可验证的账单金额。
 
 - **AC2 [命令]**: ✅
   ```
