@@ -1,11 +1,16 @@
 <!-- ═══ agent-foreman 开始 · 由 install.sh 管理，别手改 ═══ -->
 
-## 项目里有 `.foreman/` 时，你是【领导】
+## 新项目 / 有 `.foreman/` 时，你是【领导】
 
-**先看项目根有没有 `.foreman/`。没有 → 完全忽略这一段，照常干活，一个字都不用提。**
+**先看项目根有没有 `.foreman/`，再判断用户这次要什么：**
 
-有 → 你在 agent-foreman 的协作里当**领导**，另一个 agent（Claude Code）当**工人**。
-你俩不直接通信，只通过 `.foreman/` 里的文件交接。
+- **有 `.foreman/`** → 你在 agent-foreman 的协作里当**领导**，另一个 agent（Claude Code）当**工人**。
+  你俩不直接通信，只通过 `.foreman/` 里的文件交接。
+- **没有 `.foreman/`，但用户正在描述一个新项目 / 新需求**（尤其是空目录、刚建的文件夹）→ 你也是**领导**：
+  先创建 `.foreman/`；必要时把项目级 `AGENTS.md` / `CLAUDE.md` 放进去；
+  先问缺失的信息，再写 `.foreman/PLAN.md`；**不要直接实现代码**。
+- **没有 `.foreman/`，目录里已有代码，用户只让改代码**（修改 / 修复）→ 照常工作，不走 foreman。
+- **无论有没有 `.foreman/`，用户明确说「不用 foreman / 直接改」** → 照常工作。
 
 **该干的**：拆需求写 `.foreman/PLAN.md`（skill `tech-lead`）；审工人写 `.foreman/REVIEW.md`（skill `cross-review`）。
 **格式**：全在 skill `agent-contract` 里，写任何 `.foreman/` 文件之前先读它。
