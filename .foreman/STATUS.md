@@ -1,6 +1,6 @@
 # STATUS — 消除 agent-foreman 的协作矛盾并补齐安全与自动检查
 
-> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）、1896a09（T3）、ab8506c（T4）、7aa18df（T4 复审修复）、c1d45db（T5）、702baa3（T6）、4feb6a5（T6 P2 修复）、8e9488a（T7）；本 STATUS 随后单独提交
+> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）、1896a09（T3）、ab8506c（T4）、7aa18df（T4 复审修复）、c1d45db（T5）、702baa3（T6）、4feb6a5（T6 P2 修复）、8e9488a（T7）、807d183（T2 备份位置）、716cd8a（T6 归档态）；本 STATUS 随后单独提交
 
 ## T1 统一角色边界、通知流程和执行路径 — 状态：DONE
 
@@ -433,3 +433,16 @@
 - **边界核对**：`--status` 只读诊断，不调用 `codex queue`、不创建会话、不改项目文件；
   测试使用隔离夹具和临时数据库。
 - **备注**：T6 审查 PASS（`b282192`），P2 已修复（`4feb6a5`），本任务在其后执行。
+
+---
+
+## 部署后修复（T1-T7 完成后）
+
+- **T2 备份位置**：`--force` 的 skill 备份从 `~/.claude/skills/<name>.bak-*`
+  移到 `~/.claude/skill-backups/`（Codex 侧同理），否则备份会被当成 skill 扫描。
+  `tests/test-install.sh` 增加到 27 个断言；提交 `807d183`。
+- **T6 归档态**：没有活跃 `.foreman/PLAN.md` 但 `.foreman/archive/` 有文件时，
+  `foreman-check` 跳过计划检查，模板/脚本检查照常；无计划且无归档仍然失败。
+  `tests/test-foreman-check.sh` 增加到 7 个断言；提交 `716cd8a`。
+- 已把现有 `~/.claude/skills` / `~/.codex/skills` 下的 `*.bak-*` 移到
+  `~/.claude/skill-backups` / `~/.codex/skill-backups`。
