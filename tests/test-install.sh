@@ -212,8 +212,42 @@ else
     bad "用户改过的 notify-lead 被删除"
 fi
 
-# ── 8. 语法检查 ─────────────────────────────────────────────
-printf '\n[8] 语法检查\n'
+# ── 8. 安装时保护改过的 notify-lead ─────────────────────────
+printf '\n[8] 安装时保护改过的 notify-lead\n'
+h="$(mk_home notify-install)"
+mkdir -p "$h/.local/bin"
+printf 'USER NOTIFY\n' > "$h/.local/bin/notify-lead"
+chmod +x "$h/.local/bin/notify-lead"
+cp "$h/.local/bin/notify-lead" "$T/user-notify-lead"
+
+out="$(run_install "$h" 2>&1)"; rc=$?
+assert_eq "默认安装退出码为 0" "0" "$rc"
+if cmp -s "$T/user-notify-lead" "$h/.local/bin/notify-lead"; then
+    ok "默认安装保留用户 notify-lead"
+else
+    bad "默认安装覆盖了用户 notify-lead"
+fi
+case "$out" in
+    *"内容与仓库不同"*|*"留着"*) ok "输出保留提示" ;;
+    *) bad "没有输出保留提示" ;;
+esac
+
+out="$(run_install "$h" --force 2>&1)"; rc=$?
+assert_eq "--force 安装退出码为 0" "0" "$rc"
+if cmp -s "$REPO/scripts/notify-lead.sh" "$h/.local/bin/notify-lead"; then
+    ok "--force 装入仓库版本"
+else
+    bad "--force 没有装入仓库版本"
+fi
+bak="$(ls "$h/.local/bin/notify-lead.bak-"* 2>/dev/null | head -n1)"
+if [ -n "$bak" ] && cmp -s "$T/user-notify-lead" "$bak"; then
+    ok "备份内容与用户原版本一致"
+else
+    bad "没有可恢复的 notify-lead 备份"
+fi
+
+# ── 9. 语法检查 ─────────────────────────────────────────────
+printf '\n[9] 语法检查\n'
 if bash -n "$REPO/install.sh"; then
     ok "bash -n install.sh"
 else

@@ -286,13 +286,36 @@ if [ "$UNINSTALL" = 1 ]; then
     else
         rm -f "$BIN_DIR/notify-lead"; say "✅ 删了 notify-lead"
     fi
-elif [ "$DRY_RUN" = 1 ]; then
-    say "会装 notify-lead → $BIN_DIR/notify-lead"
 else
-    mkdir -p "$BIN_DIR"
-    cp "$REPO_DIR/scripts/notify-lead.sh" "$BIN_DIR/notify-lead"
-    chmod +x "$BIN_DIR/notify-lead"
-    say "✅ notify-lead（在项目里任意位置跑都行）"
+    if [ ! -e "$BIN_DIR/notify-lead" ]; then
+        if [ "$DRY_RUN" = 1 ]; then
+            say "会装 notify-lead → $BIN_DIR/notify-lead"
+        else
+            mkdir -p "$BIN_DIR"
+            cp "$REPO_DIR/scripts/notify-lead.sh" "$BIN_DIR/notify-lead"
+            chmod +x "$BIN_DIR/notify-lead"
+            say "✅ notify-lead（在项目里任意位置跑都行）"
+        fi
+    elif cmp -s "$REPO_DIR/scripts/notify-lead.sh" "$BIN_DIR/notify-lead"; then
+        if [ "$DRY_RUN" = 1 ]; then
+            say "notify-lead 已是最新 → $BIN_DIR/notify-lead"
+        else
+            chmod +x "$BIN_DIR/notify-lead"
+            say "✅ notify-lead 已是最新"
+        fi
+    elif [ "$FORCE" != 1 ]; then
+        say "⚠️  $BIN_DIR/notify-lead 内容与仓库不同 —— 留着；用 --force 覆盖（会先备份）"
+    elif [ "$DRY_RUN" = 1 ]; then
+        say "会先备份 $BIN_DIR/notify-lead → $BIN_DIR/notify-lead.bak-$BACKUP_TS.*，再装"
+    else
+        mkdir -p "$BIN_DIR"
+        # mktemp 保证同一秒内重复 --force 也不会覆盖已有备份。
+        backup="$(mktemp "$BIN_DIR/notify-lead.bak-$BACKUP_TS.XXXXXX")"
+        cp -a "$BIN_DIR/notify-lead" "$backup"
+        cp "$REPO_DIR/scripts/notify-lead.sh" "$BIN_DIR/notify-lead"
+        chmod +x "$BIN_DIR/notify-lead"
+        say "⚠️  $BIN_DIR/notify-lead 已备份 → $backup，并装入仓库版本"
+    fi
     case ":$PATH:" in
         *":$BIN_DIR:"*) ;;
         *) say "⚠️  $BIN_DIR 不在 PATH 里 —— 把它加进去才能直接敲 notify-lead" ;;
