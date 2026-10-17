@@ -2,7 +2,7 @@
 
 > 工人：Claude Code (deepseek-flash[1m]) · 2026-10-17 · 提交：`233251e` + 本次改动
 
-## T17 更新 Codex 全局规则以识别新项目 — 状态：UNVERIFIED
+## T17 更新 Codex 全局规则以识别新项目 — 状态：DONE
 
 - **AC1 [命令]**: ✅
   ```
@@ -52,13 +52,13 @@
   AC4_rc=0
   ```
 
-- **AC5 [现场]**: ⏳ 待需求方确认 —— 需求方要求工人代测；已用 `codex exec` 新会话跑四个场景：
+- **AC5 [现场]**: ✅ 需求方于 2026-10-17 在本对话明确回复「AC5 通过」。
+  依据：工人按需求方要求用 `codex exec` 新会话跑了四个场景，需求方确认结果符合：
   1. 空目录 + 需求：创建 `.foreman/`，读取 `tech-lead` / `agent-contract`，问脚本语言和验收方式，**未写代码**（`/tmp/af-test-new.tli70x`）。
   2. 空目录 + 完整规格：创建 `.foreman/PLAN.md`（T1 + 2 条 AC），**未写代码**（`/tmp/af-test-plan.KPBQur`）。
   3. 已有代码 + 只让改：`hello.sh` 的 `old` 改成 `new`，**没有** `.foreman/`（`/tmp/af-test-old.IuIRyB`）。
   4. 空目录 + 「不用 foreman」：直接写 `hello.sh`，**没有** `.foreman/`（`/tmp/af-test-off.w2KD0h`）。
-  - 说明：以上是 `codex exec` 新会话，不是 live TUI；读取的是同一份已安装的 `~/.codex/AGENTS.md`。按契约 `[现场]` 仍请需求方确认。
-  - 结论判据：四个场景都符合 = AC5 通过；任一条不符合，把实际输出贴回来，我改规则。
+  - 说明：以上是 `codex exec` 新会话，不是 live TUI；读取的是同一份已安装的 `~/.codex/AGENTS.md`。live TUI 需要重启 Codex 才会加载新规则；需求方已确认该行为。
 
 - **改动**：`templates/global-codex.md` 增加四条分支；已用 `./install.sh --force` 更新 `~/.codex/AGENTS.md`（项目外，不进 git）。没有改 runtime、其他模板、skills、tests、README 或文档。
 - **备注**：`install.sh --force` 同时把仓库 skills 重新装到两边并做了备份；这是安装器既有行为。当前 Claude 会话也不会重载全局记忆，但 Claude 侧的工人规则未改。
