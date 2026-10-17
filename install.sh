@@ -36,6 +36,10 @@ UNINSTALL=0
 PROJECT=""
 BACKUP_TS="$(date +%Y%m%d-%H%M%S)"
 
+# 全局记忆的插入标记。开始标记只匹配前缀，结束标记要完整匹配。
+AF_BEGIN='<!-- ═══ agent-foreman 开始'
+AF_END='<!-- ═══ agent-foreman 结束 ═══ -->'
+
 while [ $# -gt 0 ]; do
     case "$1" in
         --dry-run)   DRY_RUN=1 ;;
@@ -63,6 +67,21 @@ target_dir() {
     esac
 }
 
+# 标记必须成对出现。只有开始标记、没有结束标记时，任何修改都可能把
+# 用户文件后面的内容当成我们那段删掉 —— 所以这里直接拒绝。
+check_global_marker_pair() {   # check_global_marker_pair <文件> <说明>
+    local f="$1" what="$2"
+    [ -e "$f" ] || return 0
+    grep -qF "$AF_BEGIN" "$f" 2>/dev/null || return 0
+    if ! grep -qF "$AF_END" "$f" 2>/dev/null; then
+        printf 'install.sh: %s 里有 agent-foreman 开始标记，但没有结束标记：%s\n' "$what" "$f" >&2
+        printf '            拒绝安装/卸载/修改，文件保持原样。\n' >&2
+        printf '            请从 %s.bak-* 恢复，或手工补上结束标记：%s\n' "$f" "$AF_END" >&2
+        return 1
+    fi
+    return 0
+}
+
 installed=0
 skipped=0
 removed=0
@@ -73,6 +92,10 @@ say "Claude 侧: $CLAUDE_DIR"
 say "Codex 侧 : $CODEX_DIR"
 [ "$DRY_RUN" = 1 ]   && say "模式    : dry-run（不会动任何文件）"
 [ "$UNINSTALL" = 1 ] && say "模式    : 卸载"
+
+# ── Preflight：标记不成对就什么都别动 ──────────────────────
+check_global_marker_pair "$HOME/.claude/CLAUDE.md"               "Claude Code 全局记忆" || exit 3
+check_global_marker_pair "${CODEX_HOME:-$HOME/.codex}/AGENTS.md" "Codex 全局记忆"       || exit 3
 
 for line in $LAYOUT; do
     [ -n "$line" ] || continue
@@ -92,12 +115,15 @@ for line in $LAYOUT; do
 
         if [ "$UNINSTALL" = 1 ]; then
             if [ -d "$dest" ]; then
-                if [ "$DRY_RUN" = 1 ]; then
+                if ! diff -rq "$src" "$dest" >/dev/null 2>&1; then
+                    say "[$side] ⏭  $name 内容与仓库不同 —— 留着（不是我们装的那份）"
+                elif [ "$DRY_RUN" = 1 ]; then
                     say "[$side] 会删 $dest"
+                    removed=$((removed + 1))
                 else
                     rm -rf "$dest"; say "[$side] 已删 $name"
+                    removed=$((removed + 1))
                 fi
-                removed=$((removed + 1))
             fi
             continue
         fi
@@ -114,10 +140,18 @@ for line in $LAYOUT; do
         fi
 
         if [ "$DRY_RUN" = 1 ]; then
-            say "[$side] 会装 $name → $dest"
+            if [ -e "$dest" ]; then
+                say "[$side] 会先备份 $dest → $dest.bak-$BACKUP_TS，再装 $name"
+            else
+                say "[$side] 会装 $name → $dest"
+            fi
         else
             mkdir -p "$dest_root"
-            rm -rf "$dest"
+            if [ -e "$dest" ]; then
+                cp -a "$dest" "$dest.bak-$BACKUP_TS"
+                say "[$side] 已备份 $name → $dest.bak-$BACKUP_TS"
+                rm -rf "$dest"
+            fi
             cp -r "$src" "$dest"
             say "[$side] ✅ 装了 $name"
         fi
@@ -135,27 +169,51 @@ done
 #
 # ⚠️ 这两个文件【用户自己很可能已经有内容了】（本机 ~/.claude/CLAUDE.md 就有 18 行铁律）。
 #    所以只用一对标记夹一段写进去，标记之外一个字都不碰；改前先备份。
-AF_BEGIN='<!-- ═══ agent-foreman 开始'
-AF_END='<!-- ═══ agent-foreman 结束 ═══ -->'
 
 put_global() {   # put_global <仓库里的模板> <目标文件> <说明>
     local src="$REPO_DIR/$1" dest="$2" what="$3"
     [ -f "$src" ] || { say "⚠️  仓库里没有 $src"; return; }
+
+    # 标记不成对时拒绝任何修改（preflight 已检查；这里再兜一层）。
+    if [ -e "$dest" ] && grep -qF "$AF_BEGIN" "$dest" 2>/dev/null && ! grep -qF "$AF_END" "$dest" 2>/dev/null; then
+        say "❌ $what：找到开始标记，但没有结束标记 —— 拒绝修改，文件保持原样。"
+        say "    请从 $dest.bak-* 恢复，或手工补上结束标记：$AF_END"
+        return 1
+    fi
 
     if [ "$UNINSTALL" = 1 ]; then
         [ -e "$dest" ] || return
         grep -qF "$AF_BEGIN" "$dest" 2>/dev/null || { say "⏭  $what：没有我们那段，没动"; return; }
         if [ "$DRY_RUN" = 1 ]; then say "会从 $what 里删掉 agent-foreman 那段"; return; fi
         python3 - "$dest" <<'PY'
-import sys
+import os, sys, tempfile
 p = sys.argv[1]
+text = open(p, encoding="utf-8").read()
+lines = text.split("\n")
 out, skip = [], False
-for ln in open(p, encoding="utf-8").read().split("\n"):
-    if ln.startswith("<!-- ═══ agent-foreman 开始"): skip = True
-    if not skip: out.append(ln)
-    if ln.strip() == "<!-- ═══ agent-foreman 结束 ═══ -->": skip = False
-while out and out[-1].strip() == "": out.pop()
-open(p, "w", encoding="utf-8").write("\n".join(out) + "\n")
+start = end = None
+for i, ln in enumerate(lines):
+    if ln.startswith("<!-- ═══ agent-foreman 开始"):
+        start = i
+        skip = True
+    if not skip:
+        out.append(ln)
+    if ln.strip() == "<!-- ═══ agent-foreman 结束 ═══ -->":
+        end = i
+        skip = False
+if start is not None and end is None:
+    sys.stderr.write("install.sh: 找到开始标记但没有结束标记，拒绝修改。\n")
+    sys.exit(3)
+new_text = "\n".join(out)
+if text.endswith("\n") and not new_text.endswith("\n"):
+    new_text += "\n"
+real = os.path.realpath(p)
+fd, tmp = tempfile.mkstemp(dir=os.path.dirname(real) or ".", prefix=".agent-foreman-", text=True)
+with os.fdopen(fd, "w", encoding="utf-8") as f:
+    f.write(new_text)
+if os.path.exists(real):
+    os.chmod(tmp, os.stat(real).st_mode & 0o777)
+os.replace(tmp, real)
 PY
         say "✅ $what：删掉了 agent-foreman 那段（别的一句话没动）"
         return
@@ -169,25 +227,38 @@ PY
     mkdir -p "$(dirname "$dest")"
     [ -e "$dest" ] && cp "$dest" "$dest.bak-$BACKUP_TS"
     python3 - "$src" "$dest" <<'PY'
-import sys
+import os, sys, tempfile
 src, dest = sys.argv[1], sys.argv[2]
 block = open(src, encoding="utf-8").read().rstrip("\n").split("\n")
 try:
     old = open(dest, encoding="utf-8").read()
 except FileNotFoundError:
     old = ""
-lines = old.split("\n")
+lines = old.split("\n") if old else []
 start = end = None
 for i, ln in enumerate(lines):
-    if ln.startswith("<!-- ═══ agent-foreman 开始"): start = i
+    if ln.startswith("<!-- ═══ agent-foreman 开始"):
+        start = i
     if start is not None and ln.strip() == "<!-- ═══ agent-foreman 结束 ═══ -->":
-        end = i; break
+        end = i
+        break
+if start is not None and end is None:
+    sys.stderr.write("install.sh: 找到开始标记但没有结束标记，拒绝修改。\n")
+    sys.exit(3)
 if start is not None and end is not None:          # 已有 → 就地换掉（位置不变）
     new = lines[:start] + block + lines[end + 1:]
 else:                                              # 没有 → 追加到末尾
     new = lines + ([""] if lines and lines[-1].strip() else []) + block
-while len(new) > 1 and new[-1].strip() == "": new.pop()
-open(dest, "w", encoding="utf-8").write("\n".join(new) + "\n")
+new_text = "\n".join(new)
+if not new_text.endswith("\n"):
+    new_text += "\n"
+real = os.path.realpath(dest)
+fd, tmp = tempfile.mkstemp(dir=os.path.dirname(real) or ".", prefix=".agent-foreman-", text=True)
+with os.fdopen(fd, "w", encoding="utf-8") as f:
+    f.write(new_text)
+if os.path.exists(real):
+    os.chmod(tmp, os.stat(real).st_mode & 0o777)
+os.replace(tmp, real)
 PY
     say "✅ $what：写入了 agent-foreman 角色说明"
 }
@@ -202,10 +273,14 @@ put_global "templates/global-codex.md"  "${CODEX_HOME:-$HOME/.codex}/AGENTS.md" 
 BIN_DIR="${FOREMAN_BIN_DIR:-$HOME/.local/bin}"
 head_ "全局命令（$BIN_DIR）"
 if [ "$UNINSTALL" = 1 ]; then
-    if [ -e "$BIN_DIR/notify-lead" ]; then
-        [ "$DRY_RUN" = 1 ] && say "会删 $BIN_DIR/notify-lead" || { rm -f "$BIN_DIR/notify-lead"; say "✅ 删了 notify-lead"; }
-    else
+    if [ ! -e "$BIN_DIR/notify-lead" ]; then
         say "⏭  $BIN_DIR/notify-lead 本来就没有"
+    elif ! cmp -s "$REPO_DIR/scripts/notify-lead.sh" "$BIN_DIR/notify-lead"; then
+        say "⏭  $BIN_DIR/notify-lead 内容与仓库不同 —— 留着（不是我们装的那份）"
+    elif [ "$DRY_RUN" = 1 ]; then
+        say "会删 $BIN_DIR/notify-lead"
+    else
+        rm -f "$BIN_DIR/notify-lead"; say "✅ 删了 notify-lead"
     fi
 elif [ "$DRY_RUN" = 1 ]; then
     say "会装 notify-lead → $BIN_DIR/notify-lead"
@@ -236,10 +311,23 @@ if [ -n "$PROJECT" ]; then
         local s="$REPO_DIR/$1" d="$PROJ/$2" what="$3"
         if [ -e "$d" ] && ! same_as_ours "$s" "$d"; then
             if [ "$FORCE" = 1 ]; then
-                say "⚠️  $what 已存在且内容不同 —— --force，覆盖（原文件没备份，自己确认过）"
+                if [ "$DRY_RUN" = 1 ]; then
+                    say "⚠️  $what 已存在且内容不同 —— 会先备份 $d → $d.bak-$BACKUP_TS，再覆盖"
+                else
+                    cp "$d" "$d.bak-$BACKUP_TS"
+                    say "⚠️  $what 已存在且内容不同 —— 已备份 $d.bak-$BACKUP_TS，再覆盖"
+                fi
             else
                 say "⏭  $what 已存在且内容不同 —— 没动它。"
-                say "    要合进去，自己把这一行加到 $2 末尾：  @AGENTS.md"
+                case "$2" in
+                    AGENTS.md)
+                        say "    要合进去，请把 templates/AGENTS.md 里的角色说明手工合并到现有 AGENTS.md；"
+                        say "    不要加 @AGENTS.md（那是自引用）。"
+                        ;;
+                    *)
+                        say "    要合进去，自己把这一行加到 $2 末尾：  @AGENTS.md"
+                        ;;
+                esac
                 return
             fi
         fi
