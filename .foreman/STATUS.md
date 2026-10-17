@@ -1,6 +1,6 @@
 # STATUS — 消除 agent-foreman 的协作矛盾并补齐安全与自动检查
 
-> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）；本 STATUS 随后单独提交
+> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）、de23aad（T2 复审修复）；本 STATUS 随后单独提交
 
 ## T1 统一角色边界、通知流程和执行路径 — 状态：DONE
 
@@ -77,13 +77,17 @@
     ✅ 退出码为 3
     ✅ 目标文件逐字节不变
     ✅ 错误信息说明结束标记缺失
+  [2] 标记错序
+    ✅ 错序标记退出码为 3
+    ✅ 错序标记文件逐字节不变
+    ✅ 错误信息说明标记不成对
   ```
-  该用例先正常安装，再删掉结束标记，然后 `--uninstall`；preflight 在任何删除之前退出 3，
-  目标文件与操作前逐字节一致（`cmp -s` 通过）。
+  两个用例都构造损坏的全局文件（缺结束标记 / 结束标记在开始之前），再 `--uninstall`；
+  preflight 在任何删除之前退出 3，目标文件与操作前逐字节一致（`cmp -s` 通过）。
 
 - **AC2 [命令]**: ✅
   ```
-  [2] 默认安装 / --force 备份
+  [3] 默认安装 / --force 备份
     ✅ 默认安装退出码为 0
     ✅ 默认安装保留用户版本
     ✅ --force 安装退出码为 0
@@ -93,7 +97,7 @@
 
 - **AC3 [命令]**: ✅
   ```
-  [3] 项目文件冲突
+  [4] 项目文件冲突
     ✅ 项目安装退出码为 0
     ✅ AGENTS.md 冲突提示可用且不自引用
     ✅ 默认不覆盖用户 AGENTS.md
@@ -103,16 +107,35 @@
 
 - **AC4 [命令]**: ✅
   ```
-  [7] 语法检查
+  [8] 语法检查
     ✅ bash -n install.sh
   ```
 
-- **汇总**：`PASS=23 FAIL=0`（`bash tests/test-install.sh` 退出码 0）
-- **改动**：`install.sh`（112 insertions / 24 deletions）、新增 `tests/test-install.sh`
-- **提交**：`6d352dc`
+- **汇总**：`PASS=26 FAIL=0`（`bash tests/test-install.sh` 退出码 0）
+- **改动**：`install.sh`（T2 首轮 + 复审修复）、新增 `tests/test-install.sh`（26 个断言）
+- **提交**：`6d352dc`（首轮）、`de23aad`（复审修复）
 - **边界核对**：
   - 默认安装仍保留内容不同的同名 skill 和项目文件（AC2 / AC3 用例）。
   - 卸载保留标记段之外的 `SENTINEL-TOP` / `SENTINEL-AFTER`，并保留符号链接和用户改过的
-    `notify-lead`（额外用例 4 / 5 / 6）。
+    `notify-lead`（额外用例 5 / 6 / 7）。
   - 未改变额度闸门，未引入新的交接机制。
-- **备注**：T1 审查已 PASS（`27a1d4d`），本任务在其后执行。
+- **备注**：首轮审查 BLOCK（P1 标记错序，见 `d08028b`），已修复并补充回归，等待复审。
+  T1 审查 PASS（`27a1d4d`），本任务在其后执行。
+
+### 复审修复（P1）— 状态：DONE
+
+- **发现**：孤立的结束标记在前、开始标记在后时，旧 preflight 只确认两者都存在，
+  卸载会把未闭合开始标记之后的内容当成我们那段删掉。
+- **修复**：preflight / `put_global` / 两个 Python 写入统一要求“开始、结束各恰好 1 个，
+  且结束在开始之后”；卸载按起止索引切片，不再逐行 `skip`。
+- **复现**（Codex 给的原场景）：
+  ```
+  $ HOME=... ./install.sh --uninstall
+  install.sh: Claude Code 全局记忆 里的 agent-foreman 标记不成对：.../CLAUDE.md
+              开始标记 1 个，结束标记 1 个；要求各恰好 1 个，且结束在开始之后。
+              拒绝安装/卸载/修改，文件保持原样。
+  exit=3
+  FILE_UNCHANGED
+  ```
+- **回归**：新增 `[2] 标记错序`；完整套件 `PASS=26 FAIL=0`。
+- **提交**：`de23aad`
