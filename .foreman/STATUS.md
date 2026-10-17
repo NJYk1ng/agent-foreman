@@ -1,6 +1,6 @@
 # STATUS — 消除 agent-foreman 的协作矛盾并补齐安全与自动检查
 
-> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1 实现；本 STATUS 随后单独提交）
+> 工人：Claude Code (deepseek-flash) · 2026-10-17 · 提交：4f47aa1（T1）、6d352dc（T2）；本 STATUS 随后单独提交
 
 ## T1 统一角色边界、通知流程和执行路径 — 状态：DONE
 
@@ -65,3 +65,54 @@
   需 `./install.sh --force` 才会生效。本轮没有动用户真实 HOME 的安装副本。
 - **未纳入 T1 的已知后续**：`docs/contract.md` 的旧 `⏸` 措辞 / 「钩子（期二）」 / 7.3k、
   README 死锚点、STATUS 提交时序等，按 PLAN 由 T5 处理。
+
+---
+
+## T2 修复安装器卸载、覆盖备份和冲突提示 — 状态：DONE
+
+- **AC1 [命令]**: ✅
+  ```
+  $ bash tests/test-install.sh
+  [1] 缺结束标记
+    ✅ 退出码为 3
+    ✅ 目标文件逐字节不变
+    ✅ 错误信息说明结束标记缺失
+  ```
+  该用例先正常安装，再删掉结束标记，然后 `--uninstall`；preflight 在任何删除之前退出 3，
+  目标文件与操作前逐字节一致（`cmp -s` 通过）。
+
+- **AC2 [命令]**: ✅
+  ```
+  [2] 默认安装 / --force 备份
+    ✅ 默认安装退出码为 0
+    ✅ 默认安装保留用户版本
+    ✅ --force 安装退出码为 0
+    ✅ --force 装入仓库版本
+    ✅ 备份内容与用户原版本一致
+  ```
+
+- **AC3 [命令]**: ✅
+  ```
+  [3] 项目文件冲突
+    ✅ 项目安装退出码为 0
+    ✅ AGENTS.md 冲突提示可用且不自引用
+    ✅ 默认不覆盖用户 AGENTS.md
+    ✅ 项目 --force 退出码为 0
+    ✅ 项目 --force 覆盖前备份了原文件
+  ```
+
+- **AC4 [命令]**: ✅
+  ```
+  [7] 语法检查
+    ✅ bash -n install.sh
+  ```
+
+- **汇总**：`PASS=23 FAIL=0`（`bash tests/test-install.sh` 退出码 0）
+- **改动**：`install.sh`（112 insertions / 24 deletions）、新增 `tests/test-install.sh`
+- **提交**：`6d352dc`
+- **边界核对**：
+  - 默认安装仍保留内容不同的同名 skill 和项目文件（AC2 / AC3 用例）。
+  - 卸载保留标记段之外的 `SENTINEL-TOP` / `SENTINEL-AFTER`，并保留符号链接和用户改过的
+    `notify-lead`（额外用例 4 / 5 / 6）。
+  - 未改变额度闸门，未引入新的交接机制。
+- **备注**：T1 审查已 PASS（`27a1d4d`），本任务在其后执行。
