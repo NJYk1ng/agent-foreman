@@ -101,5 +101,31 @@ else
     printf '%s\n' "$out" | sed 's/^/    /'
 fi
 
+# ── 5. 字段值为空 ───────────────────────────────────────────
+printf '\n[5] 字段值为空\n'
+copy_fixture
+python3 - "$ROOT/.foreman/PLAN.md" <<'PY'
+import sys
+p = sys.argv[1]
+lines = open(p, encoding="utf-8").read().splitlines()
+out, in_t1 = [], False
+for ln in lines:
+    if ln.startswith("### T1"):
+        in_t1 = True
+    elif ln.startswith("### T") or ln.startswith("## "):
+        in_t1 = False
+    if in_t1 and ln.startswith("- **边界**"):
+        ln = "- **边界**："
+    out.append(ln)
+open(p, "w", encoding="utf-8").write("\n".join(out) + "\n")
+PY
+out="$(run_check)"; rc=$?
+if [ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q '边界'; then
+    ok "空字段值被拒绝并指出「边界」"
+else
+    bad "空字段值没有被正确报告（exit=$rc）"
+    printf '%s\n' "$out" | sed 's/^/    /'
+fi
+
 printf '\nPASS=%d FAIL=%d\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

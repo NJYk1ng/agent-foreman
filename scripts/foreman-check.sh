@@ -84,6 +84,11 @@ for task in tasks:
     for field in ("目标", "谁写", "依赖", "验收标准", "边界"):
         if f"**{field}**" not in body:
             errors.append(f"{tid}: 缺少字段「{field}」")
+    # 验收标准的“值”是后面的 AC 行；其余四个字段要求冒号后有内容。
+    for field in ("目标", "谁写", "依赖", "边界"):
+        m = re.search(rf"\*\*{field}\*\*[：:]\s*(.*)", body)
+        if m and not m.group(1).strip():
+            errors.append(f"{tid}: 字段「{field}」的值为空")
     m = re.search(r"\*\*谁写\*\*：\s*(\S+)", body)
     if m and m.group(1) != "工人":
         errors.append(f"{tid}: 谁写不是「工人」")
