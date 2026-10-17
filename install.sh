@@ -155,17 +155,21 @@ for line in $LAYOUT; do
             continue
         fi
 
+        # ⚠️ 备份不能放在 skills 目录里：Claude Code / Codex 会把带 SKILL.md
+        #    的子目录都当成 skill 扫进去，于是 *.bak-* 会出现在技能列表里。
+        backup_dir="$(dirname "$dest_root")/skill-backups"
         if [ "$DRY_RUN" = 1 ]; then
             if [ -e "$dest" ]; then
-                say "[$side] 会先备份 $dest → $dest.bak-$BACKUP_TS，再装 $name"
+                say "[$side] 会先备份 $dest → $backup_dir/$name.bak-$BACKUP_TS，再装 $name"
             else
                 say "[$side] 会装 $name → $dest"
             fi
         else
             mkdir -p "$dest_root"
             if [ -e "$dest" ]; then
-                cp -a "$dest" "$dest.bak-$BACKUP_TS"
-                say "[$side] 已备份 $name → $dest.bak-$BACKUP_TS"
+                mkdir -p "$backup_dir"
+                cp -a "$dest" "$backup_dir/$name.bak-$BACKUP_TS"
+                say "[$side] 已备份 $name → $backup_dir/$name.bak-$BACKUP_TS"
                 rm -rf "$dest"
             fi
             cp -r "$src" "$dest"

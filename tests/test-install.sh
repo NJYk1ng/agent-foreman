@@ -114,11 +114,16 @@ if cmp -s "$REPO/skills/agent-contract/SKILL.md" "$h/.claude/skills/agent-contra
 else
     bad "--force 没有装入仓库版本"
 fi
-bak="$(ls -d "$h/.claude/skills/agent-contract.bak-"* 2>/dev/null | head -n1)"
+bak="$(ls -d "$h/.claude/skill-backups/agent-contract.bak-"* 2>/dev/null | head -n1)"
 if [ -n "$bak" ] && cmp -s "$T/user-agent-contract/SKILL.md" "$bak/SKILL.md"; then
     ok "备份内容与用户原版本一致"
 else
     bad "没有可恢复的备份（或备份内容不对）"
+fi
+if ! ls -d "$h/.claude/skills/agent-contract.bak-"* >/dev/null 2>&1; then
+    ok "备份不在 skills 目录里（不会被当成 skill）"
+else
+    bad "备份仍留在 skills 目录里"
 fi
 
 # ── 4. 项目 AGENTS.md 冲突：提示可用，不自引用 ──────────────
