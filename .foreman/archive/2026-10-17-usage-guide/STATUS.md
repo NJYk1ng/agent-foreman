@@ -34,9 +34,10 @@
   PY
   usage guide required items: OK
   workflow positions: [2392, 2405, 2411, 2434, 2448, 2456, 2477, 2487]
+  $ echo "ac2_rc=$?"
   ac2_rc=0
   ```
-  P1 修复（2026-10-17）：按 REVIEW 补齐字面串 `只是叫醒`、`没有 .foreman/PLAN.md`，并避免 workflow 之前的「归档」提前命中；AC2 重新通过，待领导复验。
+  P1 修复（2026-10-17）：按 REVIEW 补齐字面串 `只是叫醒`、`没有 .foreman/PLAN.md`，并避免 workflow 之前的「归档」提前命中；`ac2_rc` 改为真实捕获的 `$?`。本 STATUS 的 AC2 块没有 `missing section` 标题循环；REVIEW 提到的额外标题检查不在本 STATUS 中。待领导复验。
   文档包含全局安装与 `--project` 差异及原因、推荐 A / 补救 B、新项目第一句话 A/B 两例、完整协作流程、常见坑、常用命令、归档；写明 `Codex PLAN → 人批准 → Claude /execute-plan → notify-lead → 人决定审核 → Codex cross-review → 人判 [现场] → 归档`，以及无 PLAN Claude 停止、lead/review skills 只在 Codex、`[现场]` 人判、`notify-lead` 只是叫醒。
 
 - **AC3 [命令]**: ✅
