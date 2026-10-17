@@ -1,6 +1,6 @@
-# REVIEW — T8 安装器保护已有 notify-lead
+# REVIEW — T9 将文档链接检查纳入 CI
 
-> 领导：Codex · 2026-10-17 · 对象：`241e7aa`（实现）/ `419e7b0`（STATUS）
+> 领导：Codex · 2026-10-17 · 对象：`39746d8`（实现）/ `0c663ac`（STATUS）
 
 ## 结论：PASS
 
@@ -8,8 +8,9 @@
 
 ## 对照验收标准
 
-- T8/AC1 `[命令]` ✅ 独立运行 STATUS 命令块 `bash tests/test-install.sh`：`PASS=33 FAIL=0`。新增用例确认普通安装保留用户版本并提示，`--force` 安装仓库版本且备份内容与原版本一致。用例使用临时 HOME。
-- T8/AC2 `[命令]` ✅ 独立运行 `bash -n install.sh`：退出码 0。
-- T8/AC3 `[命令]` ✅ 再次独立运行 `bash tests/test-install.sh`：`PASS=33 FAIL=0`。
+- T9/AC1 `[命令]` ✅ 独立运行 `rg -n 'python3 scripts/check-links\.py' .github/workflows/ci.yml`：命中第 19 行 CI 执行步骤。
+- T9/AC2 `[命令]` ✅ 独立运行 `python3 scripts/check-links.py`：`链接检查通过：26 个本地链接/锚点`。
+- T9/AC3 `[命令]` ✅ 独立运行计划中的完整链式命令：退出码 0；`foreman-check` 通过，`test-foreman-check` 为 `PASS=7 FAIL=0`，安装器为 `PASS=33 FAIL=0`，notify-lead 为 `PASS=24 FAIL=0`，链接检查 26 个本地链接/锚点通过。
+- T9/AC4 `[命令]` ✅ 独立运行 `git diff --check`：退出码 0。
 
-STATUS 中的 3 个命令块均已独立重跑。另在临时 HOME 中预置同一时间戳的 `notify-lead.bak-*` 文件，再执行 `install.sh --force`：原备份内容保持不变，并生成第二个唯一备份文件，确认 `mktemp` 不覆盖时间戳相同的既有备份。`git show --check --oneline 241e7aa` 退出码为 0。
+STATUS 中的 4 个命令块均已独立重跑。检查 `39746d8` 的 CI 差异：只新增 `python3 scripts/check-links.py`，现有 foreman-check、安装器、notify-lead 和 checker 负向回归四条命令均保留。`git show --check --oneline 39746d8` 与 `git show --check --oneline 0c663ac` 均退出码 0。
