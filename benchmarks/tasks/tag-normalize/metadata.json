@@ -3,6 +3,7 @@
   "title": "Normalize tags",
   "task_file": "task.md",
   "workspace": "workspace",
+  "visible_files": ["normalize.py"],
   "solution": "solution",
   "grader": "grader/grade.py",
   "hidden_tests": ["grader/test_normalize.py"],

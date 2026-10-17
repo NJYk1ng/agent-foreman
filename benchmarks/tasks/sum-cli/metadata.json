@@ -3,6 +3,7 @@
   "title": "Fix the sum CLI",
   "task_file": "task.md",
   "workspace": "workspace",
+  "visible_files": ["sum.sh"],
   "solution": "solution",
   "grader": "grader/grade.sh",
   "hidden_tests": ["grader/test_sum.sh"],

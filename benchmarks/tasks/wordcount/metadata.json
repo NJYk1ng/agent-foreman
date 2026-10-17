@@ -3,6 +3,7 @@
   "title": "Normalize word counts",
   "task_file": "task.md",
   "workspace": "workspace",
+  "visible_files": ["wordcount.py"],
   "solution": "solution",
   "grader": "grader/grade.py",
   "hidden_tests": ["grader/test_wordcount.py"],

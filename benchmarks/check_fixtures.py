@@ -24,6 +24,7 @@ REQUIRED = (
     "title",
     "task_file",
     "workspace",
+    "visible_files",
     "solution",
     "grader",
     "hidden_tests",
@@ -42,6 +43,14 @@ def snapshot_hash(path):
         h.update(p.read_bytes())
         h.update(b"\0")
     return h.hexdigest()
+
+
+def workspace_files(path):
+    return sorted(
+        p.relative_to(path).as_posix()
+        for p in path.rglob("*")
+        if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc"
+    )
 
 
 def is_inside(child, parent):
@@ -118,6 +127,17 @@ def check_task(task_dir):
         errors.append("workspace is empty")
     if not solution.is_dir() or not any(p.is_file() for p in solution.rglob("*")):
         errors.append("solution is empty")
+    visible = metadata.get("visible_files")
+    if not isinstance(visible, list) or not visible or not all(isinstance(x, str) for x in visible):
+        errors.append("visible_files must be a non-empty list of strings")
+    elif workspace.is_dir():
+        actual_files = workspace_files(workspace)
+        expected_files = sorted(visible)
+        if actual_files != expected_files:
+            errors.append(
+                "workspace files do not match visible_files "
+                f"(actual={actual_files}, expected={expected_files})"
+            )
     if is_inside(task_file, workspace):
         errors.append("task_file is inside the agent-visible workspace")
     if is_inside(solution, workspace):

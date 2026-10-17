@@ -32,6 +32,9 @@ Claude Code 工人实现、自证、写 `STATUS.md`。
 
 当前任务：`wordcount`、`sum-cli`、`tag-normalize`。
 
+`workspace/` 的文件清单由 `metadata.visible_files` 固定；校验器拒绝任何多余文件，
+防止隐藏测试/评分器副本被误放进 agent 可见目录。
+
 两种方法使用**完全相同**的任务集、起始快照、任务说明和约束。
 每次运行把 `workspace/` 复制到新的运行目录；不同运行之间不共享文件、缓存或会话。
 
@@ -52,7 +55,15 @@ Claude Code 工人实现、自证、写 `STATUS.md`。
 ### 4.1 token 成本
 
 - 只从会话日志 / provider usage 读取；**不估算**。
-- 记录 input、output、cache read/write（若日志提供），汇总为总 token。
+- 先记录原始字段：`input_tokens`、`output_tokens`、`cache_read`、`cache_write`，
+  以及 provider 提供的 canonical total（如果有）。
+- 归一化：
+  - cache 字段通常是 input 的**细分**：OpenAI 的 `cached_tokens` 包含在
+    `input_tokens` 内；Anthropic 的 `cache_read_input_tokens` /
+    `cache_creation_input_tokens` 也属于 input 侧。**不要**把 cache 再加到 input 上。
+  - 有 canonical total → 用它；否则 total = `input_tokens + output_tokens`。
+  - 不同 provider 字段含义不同；跨 provider 比较前必须用同一归一化定义，
+    并在报告里同时给出原始字段和归一化 total。
 - 缺失时记 `unavailable`；不填 0、不推算。
 
 ### 4.2 wall-clock
@@ -93,6 +104,7 @@ python3 benchmarks/check_fixtures.py
 
 - 至少 3 个任务，字段/路径完整，任务 ID 唯一；
 - 固定快照的 SHA-256 匹配；
+- `workspace/` 的文件集合与 `metadata.visible_files` 完全一致（拒绝多余文件）；
 - `grader/`、隐藏测试、`solution/`、`task.md` 不在 agent 可见工作区内；
 - 起始快照会被评分器判失败（任务不是已经做完的）；
 - 覆盖 `solution/` 后评分器通过（夹具可解）。
