@@ -28,6 +28,7 @@ Two terminals: **Codex leads, Claude Code crews**.
 3. The crew runs `notify-lead`; the lead asks the human before reviewing
 4. Self-check: `./scripts/foreman-check.sh && bash tests/test-install.sh && bash tests/test-notify-lead.sh`
 5. Inspect the target session without sending: `notify-lead --status`
+6. Usage guide (Chinese): [docs/usage.md](docs/usage.md)
 
 ---
 

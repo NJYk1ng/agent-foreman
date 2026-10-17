@@ -27,6 +27,7 @@
 3. 工人跑 `notify-lead` 叫醒领导；领导先问人，再审
 4. 自检：`./scripts/foreman-check.sh && bash tests/test-install.sh && bash tests/test-notify-lead.sh`
 5. 只看会叫醒谁、不发消息：`notify-lead --status`
+6. 实际使用指南：[docs/usage.md](docs/usage.md)
 
 ---
 
