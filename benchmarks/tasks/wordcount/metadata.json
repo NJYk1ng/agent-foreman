@@ -1,0 +1,10 @@
+{
+  "id": "wordcount",
+  "title": "Normalize word counts",
+  "task_file": "task.md",
+  "workspace": "workspace",
+  "solution": "solution",
+  "grader": "grader/grade.py",
+  "hidden_tests": ["grader/test_wordcount.py"],
+  "snapshot_sha256": "82fa97e2c45163182ecf87d96f286ad81bf06e251a8ea05c5017ed45764ce623"
+}

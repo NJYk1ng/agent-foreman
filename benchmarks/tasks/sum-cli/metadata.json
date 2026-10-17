@@ -1,0 +1,10 @@
+{
+  "id": "sum-cli",
+  "title": "Fix the sum CLI",
+  "task_file": "task.md",
+  "workspace": "workspace",
+  "solution": "solution",
+  "grader": "grader/grade.sh",
+  "hidden_tests": ["grader/test_sum.sh"],
+  "snapshot_sha256": "ea8821359c7aeb4a5240082d1ecd301fb3beeb67348bcaad45f5e07c686635b9"
+}

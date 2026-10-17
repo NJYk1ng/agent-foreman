@@ -1,0 +1,10 @@
+{
+  "id": "tag-normalize",
+  "title": "Normalize tags",
+  "task_file": "task.md",
+  "workspace": "workspace",
+  "solution": "solution",
+  "grader": "grader/grade.py",
+  "hidden_tests": ["grader/test_normalize.py"],
+  "snapshot_sha256": "095c4519cfcfea296cc7d5992eb4518cbfdbe33b0a61caa2249cfba8fd55fcd7"
+}

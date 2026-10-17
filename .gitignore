@@ -17,3 +17,6 @@ settings.local.json
 # Python cache (scripts/check-links.py)
 __pycache__/
 *.pyc
+
+# Benchmark raw evidence (not committed)
+benchmarks/runs/
